@@ -3,7 +3,7 @@
 <aside>
 📌
 
-**LabourSeva** is a multi-tenant e-service delivery platform connecting citizens, retail Kendra operators, distributors, verification employees and administrators. This page consolidates the whole plan: stack, portals, features, security, employee module, Cloudflare setup, design, build phases and open items. Status: **planning, not yet built**. Last updated 2026-10-10.
+**LabourSeva** is a multi-tenant e-service delivery platform connecting users, retail Kendra operators, distributors, verification employees and administrators. This page consolidates the whole plan: stack, portals, features, security, employee module, Cloudflare setup, design, build phases and open items. Status: **planning, not yet built**. Last updated 2026-10-10.
 
 </aside>
 
@@ -14,7 +14,7 @@
 - **Goal:** a full-stack website for a government-related initiative with fee registration, payment processing, referral programs, SMS notifications and email communication, hosted on Hostinger.
 - **Language and runtime:** Node.js (TypeScript), explicitly not PHP.
 - **Hierarchy:** Superadmin, then Distributors, then Retailers, then Customers. Employees handle verification, queries and IAM. Guests apply without an account.
-- **Economy:** prepaid wallets. Distributors fund retailers, retailers pay for citizen applications from their wallet, and commissions flow up the hierarchy.
+- **Economy:** prepaid wallets. Distributors fund retailers, retailers pay for users applications from their wallet, and commissions flow up the hierarchy.
 - **Dynamic forms:** application forms render at runtime from database-defined service schemas, so new services launch without code changes.
 
 ## 2. Technology stack
@@ -23,7 +23,7 @@
 | --- | --- | --- |
 | App | Next.js (TypeScript), frontend and API routes | One codebase, SSR, easy to maintain |
 | Database | MySQL (Hostinger) with Prisma ORM | Runs on the same server, parameterized queries by default |
-| Auth | Mobile OTP for citizens; password plus OTP or TOTP for staff roles | Workers mostly use phones |
+| Auth | Mobile OTP for users; password plus OTP or TOTP for staff roles | Workers mostly use phones |
 | Payments | Razorpay (PayU optional behind the same interface) | UPI, cards, netbanking, webhooks, refunds |
 | SMS | Existing gateway (My Dreams Technology), server-side only | OTP and transactional messages; DLT-registered templates required in India |
 | Email | `no-reply@labourseva.com` via SES or Brevo SMTP | OTP, receipts, notices; SPF, DKIM and DMARC configured |
@@ -52,7 +52,7 @@ Each portal has its own login, its own session store and secret, and a host-only
 
 Landing page, service catalog, schemes, notices, feedback, grievance and contact forms, partner and franchise info, careers, downloads, help desk, multi-step registration with SMS OTP, Turnstile, legal pages (privacy, terms, refund, compliance), English and Tamil.
 
-### Citizen portal
+### users portal
 
 Registration, OTP login and recovery, dashboard, e-service browsing, dynamic application forms, document vault, Razorpay payments with receipts, active sessions manager, help desk tickets.
 
@@ -76,7 +76,7 @@ Dashboard, user management and approval queues, service catalog (categories, ser
 
 ```mermaid
 flowchart TD
-    A["Citizen or Retailer fills form and uploads documents"] --> B["PII encrypted and request saved"]
+    A["users or Retailer fills form and uploads documents"] --> B["PII encrypted and request saved"]
     B --> C["Payment: Razorpay or wallet deduction"]
     C --> D["Paid and Pending Verification"]
     D --> E["Employee verification queue"]
@@ -267,13 +267,13 @@ If the Hostinger plan allows only one Node app, run a single app with hostname-b
 - [ ]  Generate receipts as PDFs
 - [ ]  Test payment success, failure, duplicate webhook and refund cases
 
-### Step 7: Citizen, guest, retailer and distributor portals
+### Step 7: users, guest, retailer and distributor portals
 
 - [ ]  Build the public pages, service catalog and legal pages
 - [ ]  Build the dynamic form engine from service schemas
 - [ ]  Build the document vault with magic-byte checks and encrypted storage
 - [ ]  Build the tokenized document viewer (2 to 5 minute tokens, ownership checks, access logging)
-- [ ]  Build the citizen dashboard, application tracking and sessions manager
+- [ ]  Build the users dashboard, application tracking and sessions manager
 - [ ]  Build the guest flow: checkout and reference ID plus OTP tracking
 - [ ]  Build the retailer desk: assisted-application wizard, ledger, receipts, referrals
 - [ ]  Build the distributor hub: KYC, retailer onboarding, commissions and reports
