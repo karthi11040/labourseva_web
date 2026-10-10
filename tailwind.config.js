@@ -1,0 +1,73 @@
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  darkMode: ['selector', '[data-theme="dark"]'],
+  content: ['./src/**/*.{js,ts,jsx,tsx,mdx}'],
+  theme: {
+    extend: {
+      colors: {
+        // Light theme (default)
+        bg: 'var(--bg)',
+        'bg-subtle': 'var(--bg-subtle)',
+        surface: 'var(--surface)',
+        'surface-muted': 'var(--surface-muted)',
+        border: 'var(--border)',
+        'border-strong': 'var(--border-strong)',
+        text: 'var(--text)',
+        'text-secondary': 'var(--text-secondary)',
+        'text-muted': 'var(--text-muted)',
+        primary: {
+          DEFAULT: 'var(--primary)',
+          hover: 'var(--primary-hover)',
+          active: 'var(--primary-active)',
+          tint: 'var(--primary-tint)',
+        },
+        'on-primary': 'var(--on-primary)',
+        success: { DEFAULT: 'var(--success)', bg: 'var(--success-bg)', text: 'var(--success-text)' },
+        warning: { DEFAULT: 'var(--warning)', bg: 'var(--warning-bg)', text: 'var(--warning-text)' },
+        danger: { DEFAULT: 'var(--danger)', bg: 'var(--danger-bg)', text: 'var(--danger-text)' },
+        info: { DEFAULT: 'var(--info)', bg: 'var(--info-bg)', text: 'var(--info-text)' },
+      },
+      fontFamily: {
+        sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
+        'sans-ta': ['var(--font-sans-ta)', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-mono)', 'monospace'],
+      },
+      spacing: {
+        1: '4px',
+        2: '8px',
+        3: '12px',
+        4: '16px',
+        5: '20px',
+        6: '24px',
+        8: '32px',
+        10: '40px',
+        12: '48px',
+        16: '64px',
+        24: '96px',
+      },
+      borderRadius: {
+        sm: 'var(--radius-sm)',
+        md: 'var(--radius-md)',
+        lg: 'var(--radius-lg)',
+        full: 'var(--radius-full)',
+      },
+      boxShadow: {
+        xs: 'var(--shadow-xs)',
+        sm: 'var(--shadow-sm)',
+        md: 'var(--shadow-md)',
+        lg: 'var(--shadow-lg)',
+        xl: 'var(--shadow-xl)',
+        primary: 'var(--shadow-primary)',
+        focus: 'var(--shadow-focus)',
+      },
+      transitionDuration: {
+        instant: 'var(--dur-instant)',
+        fast: 'var(--dur-fast)',
+        base: 'var(--dur-base)',
+        slow: 'var(--dur-slow)',
+        slower: 'var(--dur-slower)',
+      },
+    },
+  },
+  plugins: [],
+};

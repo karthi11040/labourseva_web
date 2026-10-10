@@ -1,0 +1,238 @@
+/* ===========================
+   LabourSeva Design Tokens
+   =========================== */
+
+/* Light theme (default) */
+:root,
+[data-theme="light"] {
+  --bg: #FFFFFF;
+  --bg-subtle: #F5F5F5;
+  --surface: #FFFFFF;
+  --surface-muted: #D6D3D1;
+  --border: #E7E5E4;
+  --border-strong: #8C857D;
+  --text: #0C0A09;
+  --text-secondary: #4E4E4E;
+  --text-muted: #777169;
+  --primary: #1D3F8F;
+  --primary-hover: #17327A;
+  --primary-active: #122963;
+  --primary-tint: #EEF2FB;
+  --on-primary: #FFFFFF;
+  --success: #15803D;
+  --success-bg: #E7F6EC;
+  --success-text: #166534;
+  --warning: #B45309;
+  --warning-bg: #FDF1E3;
+  --warning-text: #92400E;
+  --danger: #B91C1C;
+  --danger-bg: #FDECEC;
+  --danger-text: #B91C1C;
+  --info: #1D3F8F;
+  --info-bg: #EEF2FB;
+  --info-text: #1D3F8F;
+  --focus-ring: #1D3F8F;
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px rgba(12,10,9,0.06);
+  --shadow-sm: 0 1px 3px rgba(12,10,9,0.10), 0 1px 2px rgba(12,10,9,0.06);
+  --shadow-md: 0 4px 14px rgba(12,10,9,0.12);
+  --shadow-lg: 0 10px 30px rgba(12,10,9,0.14);
+  --shadow-xl: 0 20px 50px rgba(12,10,9,0.18);
+  --shadow-primary: 0 4px 14px rgba(29,63,143,0.35);
+  --shadow-focus: 0 0 0 2px #FFFFFF, 0 0 0 4px #1D3F8F;
+
+  /* Motion */
+  --dur-instant: 100ms;
+  --dur-fast: 150ms;
+  --dur-base: 200ms;
+  --dur-slow: 300ms;
+  --dur-slower: 500ms;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --bg: #0C0A09;
+  --bg-subtle: #1C1917;
+  --surface: #1C1917;
+  --surface-raised: #292524;
+  --surface-muted: #44403C;
+  --border: #292524;
+  --border-strong: #78716C;
+  --text: #FAFAF9;
+  --text-secondary: #A8A29E;
+  --text-muted: #A8A29E;
+  --primary: #7FA2F0;
+  --primary-hover: #9DB8F5;
+  --primary-active: #6A8DE0;
+  --primary-tint: #17223D;
+  --on-primary: #0C0A09;
+  --success: #4ADE80;
+  --success-bg: #14281C;
+  --success-text: #4ADE80;
+  --warning: #FBBF24;
+  --warning-bg: #2E2410;
+  --warning-text: #FBBF24;
+  --danger: #F87171;
+  --danger-bg: #321716;
+  --danger-text: #F87171;
+  --info: #7FA2F0;
+  --info-bg: #17223D;
+  --info-text: #7FA2F0;
+  --focus-ring: #9DB8F5;
+
+  --shadow-xs: none;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 14px rgba(0,0,0,0.5);
+  --shadow-lg: 0 10px 30px rgba(0,0,0,0.6);
+  --shadow-xl: 0 20px 50px rgba(0,0,0,0.7);
+  --shadow-primary: 0 4px 14px rgba(127,162,240,0.25);
+  --shadow-focus: 0 0 0 2px #0C0A09, 0 0 0 4px #9DB8F5;
+
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme="system"] {
+    --bg: #0C0A09;
+    --bg-subtle: #1C1917;
+    --surface: #1C1917;
+    --surface-raised: #292524;
+    --surface-muted: #44403C;
+    --border: #292524;
+    --border-strong: #78716C;
+    --text: #FAFAF9;
+    --text-secondary: #A8A29E;
+    --text-muted: #A8A29E;
+    --primary: #7FA2F0;
+    --primary-hover: #9DB8F5;
+    --primary-active: #6A8DE0;
+    --primary-tint: #17223D;
+    --on-primary: #0C0A09;
+    --focus-ring: #9DB8F5;
+    color-scheme: dark;
+  }
+}
+
+/* ===========================
+   Base Styles
+   =========================== */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  scroll-behavior: smooth;
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+html[lang="ta"] {
+  font-family: var(--font-sans-ta);
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Skip link */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 16px;
+  z-index: 9999;
+  padding: 8px 16px;
+  background: var(--primary);
+  color: var(--on-primary);
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  text-decoration: none;
+  transition: top var(--dur-fast);
+}
+.skip-link:focus {
+  top: 16px;
+}
+
+/* Focus visible */
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Skeleton shimmer */
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-subtle) 25%, var(--border) 37%, var(--bg-subtle) 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s linear infinite;
+  border-radius: var(--radius-sm);
+}
+
+@keyframes shimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+/* Spinner */
+.spinner {
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  animation: spin 0.8s linear infinite;
+}
+
+.spinner-sm {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Top progress bar */
+.progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: var(--primary);
+  z-index: 9999;
+  transition: width var(--dur-base) var(--ease-standard);
+}
+
+/* Number formatting */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
