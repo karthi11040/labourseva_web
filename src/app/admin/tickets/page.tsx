@@ -127,10 +127,8 @@ export default function AdminTicketsPage() {
 
   const [selectedTicket, setSelectedTicket] = useState<TicketDetail | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [detailLoading, setDetailLoading] = useState(false);
 
   const [replyText, setReplyText] = useState("");
-  const [sendingReply, setSendingReply] = useState(false);
 
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [assignEmployeeId, setAssignEmployeeId] = useState<number | "">("");
@@ -168,9 +166,7 @@ export default function AdminTicketsPage() {
   }, [fetchTickets]);
 
   async function openTicketDetail(ticketId: number) {
-    setDetailLoading(true);
     setSelectedTicket(null);
-    setMessages([]);
     try {
       const res = await fetch(`/api/admin/tickets/${ticketId}`);
       const data = await res.json();
@@ -183,34 +179,40 @@ export default function AdminTicketsPage() {
       }
     } catch (err) {
       console.error("Failed to load ticket detail:", err);
-    } finally {
-      setDetailLoading(false);
     }
   }
 
   async function handleSendReply(e: React.FormEvent) {
     e.preventDefault();
     if (!replyText.trim() || !selectedTicket) return;
-    setSendingReply(true);
+    
+    const replyBody = replyText.trim();
+    setReplyText("");
+    
+    // Optimistic update - show message immediately
+    const optimisticMsg: Message = {
+      id: Date.now(),
+      author_type: "STAFF",
+      author_name: "Admin Officer",
+      body: replyBody,
+      created_at: new Date().toISOString(),
+    };
+    setMessages(prev => [...prev, optimisticMsg]);
+    
     try {
-      const res = await fetch(`/api/admin/tickets/${selectedTicket.id}`, {
+      await fetch(`/api/admin/tickets/${selectedTicket.id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           author_type: "STAFF",
           author_name: "Admin Officer",
-          body: replyText.trim(),
+          body: replyBody,
         }),
       });
-      const data = await res.json();
-      if (data.ok) {
-        setReplyText("");
-        await openTicketDetail(selectedTicket.id);
-      }
+      await openTicketDetail(selectedTicket.id);
+      await fetchTickets();
     } catch (err) {
       console.error("Failed to send reply:", err);
-    } finally {
-      setSendingReply(false);
     }
   }
 
@@ -596,11 +598,7 @@ export default function AdminTicketsPage() {
 
             {/* Messages Thread */}
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
-              {detailLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="animate-spin text-[#1e3a8a]" size={24} />
-                </div>
-              ) : messages.length === 0 ? (
+              {messages.length === 0 ? (
                 <div className="text-center py-12">
                   <MessageSquare size={32} className="mx-auto text-slate-300 dark:text-slate-600 mb-2" />
                   <p className="text-sm text-slate-500 dark:text-slate-400">No messages yet.</p>
@@ -654,10 +652,10 @@ export default function AdminTicketsPage() {
                 />
                 <button
                   type="submit"
-                  disabled={!replyText.trim() || sendingReply}
+                  disabled={!replyText.trim()}
                   className="px-5 h-11 rounded-lg bg-[#1e3a8a] text-white font-bold text-sm flex items-center gap-1.5 disabled:opacity-50 hover:bg-[#1e40af] shadow-sm"
                 >
-                  {sendingReply ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                  <Send size={14} />
                   <span>Send</span>
                 </button>
               </form>
