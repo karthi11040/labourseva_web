@@ -103,6 +103,15 @@ export default function UserTicketsPage() {
 
   const [replyText, setReplyText] = useState("");
 
+  // Auto-refresh chat every 5 seconds when a ticket is selected
+  useEffect(() => {
+    if (!selectedTicket) return;
+    const interval = setInterval(() => {
+      openTicketDetail(selectedTicket.id);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [selectedTicket?.id]);
+
   const fetchTickets = useCallback(async () => {
     setLoading(true);
     try {

@@ -136,7 +136,17 @@ export default function AdminTicketsPage() {
 
   const [resolveModalOpen, setResolveModalOpen] = useState(false);
   const [resolveNote, setResolveNote] = useState("");
+  const [resolveEmployeeId, setResolveEmployeeId] = useState<number | "">("");
   const [resolving, setResolving] = useState(false);
+
+  // Auto-refresh chat every 5 seconds when a ticket is selected
+  useEffect(() => {
+    if (!selectedTicket) return;
+    const interval = setInterval(() => {
+      openTicketDetail(selectedTicket.id);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [selectedTicket?.id]);
 
   const fetchTickets = useCallback(async () => {
     setLoading(true);
@@ -269,18 +279,23 @@ export default function AdminTicketsPage() {
     if (!selectedTicket || !resolveNote.trim()) return;
     setResolving(true);
     try {
+      const updates: any = {
+        status: "RESOLVED",
+        resolution_note: resolveNote.trim(),
+      };
+      if (resolveEmployeeId) {
+        updates.assigned_employee_id = resolveEmployeeId;
+      }
       const res = await fetch(`/api/admin/tickets/${selectedTicket.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          status: "RESOLVED",
-          resolution_note: resolveNote.trim(),
-        }),
+        body: JSON.stringify(updates),
       });
       const data = await res.json();
       if (data.ok) {
         setResolveModalOpen(false);
         setResolveNote("");
+        setResolveEmployeeId("");
         await openTicketDetail(selectedTicket.id);
         await fetchTickets();
       }
@@ -724,6 +739,19 @@ export default function AdminTicketsPage() {
               </button>
             </div>
             <div className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">Assign to Employee (Optional)</label>
+                <select
+                  value={resolveEmployeeId}
+                  onChange={(e) => setResolveEmployeeId(e.target.value ? Number(e.target.value) : "")}
+                  className="w-full h-11 px-3.5 rounded-lg border border-slate-200 dark:border-slate-600 text-sm outline-none bg-white dark:bg-slate-700 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="">Keep current assignment...</option>
+                  {employees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>{emp.name}</option>
+                  ))}
+                </select>
+              </div>
               <div>
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">Resolution Notes</label>
                 <textarea
