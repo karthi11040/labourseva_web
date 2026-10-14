@@ -176,7 +176,10 @@ export default function AdminTicketsPage() {
   }, [fetchTickets]);
 
   async function openTicketDetail(ticketId: number) {
-    setSelectedTicket(null);
+    if (selectedTicket?.id !== ticketId) {
+      setSelectedTicket(null);
+      setMessages([]);
+    }
     try {
       const res = await fetch(`/api/admin/tickets/${ticketId}`);
       const data = await res.json();
