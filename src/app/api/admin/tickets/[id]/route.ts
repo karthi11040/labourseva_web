@@ -102,9 +102,6 @@ export async function PATCH(
     if (body.status !== undefined) {
       updates.push("status = ?");
       values.push(String(body.status).toUpperCase());
-      if (body.status === "RESOLVED" || body.status === "CLOSED") {
-        updates.push("resolved_at = NOW()");
-      }
     }
     if (body.priority !== undefined) {
       updates.push("priority = ?");
