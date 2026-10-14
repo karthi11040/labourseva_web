@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { CheckCircle2, Send, RefreshCw, Loader2 } from "lucide-react";
+import { CheckCircle2, Send, RefreshCw, Loader2, X } from "lucide-react";
 
 interface Ticket {
   id: number;
@@ -182,7 +182,7 @@ export default function QueryDeskPage() {
         </button>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[360px_1fr]">
+      <div className="grid gap-6">
         <aside className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm">
           <div className="border-b border-slate-100 dark:border-slate-700 p-4">
             <strong className="text-sm text-slate-900 dark:text-white">Assigned requests ({tickets.length})</strong>
@@ -223,22 +223,22 @@ export default function QueryDeskPage() {
             </div>
           )}
         </aside>
+      </div>
 
-        <section className="flex min-h-[570px] flex-col rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm">
-          {!selectedTicket ? (
-            <div className="flex flex-1 items-center justify-center p-8 text-center text-sm text-slate-500 dark:text-slate-400">
-              Select or wait for an assigned support request to view thread details.
-            </div>
-          ) : (
-            <>
-              <div className="flex flex-col gap-3 border-b border-slate-100 dark:border-slate-700 p-5 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <span className="font-mono text-xs text-slate-400 dark:text-slate-500">{selectedTicket.reference_no}</span>
-                  <h2 className="mt-1 text-lg font-bold text-slate-950 dark:text-white">{selectedTicket.subject}</h2>
-                  <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
-                    {selectedTicket.category || "General"} · SLA: {selectedTicket.sla_hours}h · {selectedTicket.contact_name || "Anonymous"}
-                  </span>
-                </div>
+      {/* Chat Popup */}
+      {selectedTicket && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-2xl h-[85vh] bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden">
+            {/* Popup Header */}
+            <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/50 rounded-t-2xl flex-shrink-0">
+              <div>
+                <span className="font-mono text-xs text-slate-400 dark:text-slate-500">{selectedTicket.reference_no}</span>
+                <h2 className="text-lg font-bold text-slate-950 dark:text-white">{selectedTicket.subject}</h2>
+                <span className="block text-xs text-slate-500 dark:text-slate-400">
+                  {selectedTicket.category || "General"} · SLA: {selectedTicket.sla_hours}h · {selectedTicket.contact_name || "Anonymous"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
                 <span className={`rounded-full px-3 py-1 text-xs font-bold ${
                   selectedTicket.status === "RESOLVED" ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400" :
                   selectedTicket.status === "OPEN" ? "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400" :
@@ -246,60 +246,69 @@ export default function QueryDeskPage() {
                 }`}>
                   {selectedTicket.status.replace(/_/g, " ")}
                 </span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTicket(null)}
+                  className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                >
+                  <X size={20} />
+                </button>
               </div>
+            </div>
 
-              <div className="flex-1 space-y-4 p-5 overflow-y-auto max-h-[400px]">
-                {messages.length === 0 ? (
-                  <div className="text-center py-8 text-sm text-slate-500 dark:text-slate-400">No messages yet.</div>
-                ) : (
-                  messages.map((message) => (
-                    <div key={message.id} className={`flex flex-col ${message.author_type === "STAFF" ? "items-end" : "items-start"}`}>
-                      <span className="mb-1 text-xs text-slate-500 dark:text-slate-400">
-                        {message.author_name} · {formatTimeAgo(message.created_at)}
-                      </span>
-                      <p className={`max-w-xl rounded-lg p-3 text-sm leading-6 ${
-                        message.author_type === "STAFF"
-                          ? "bg-[#1e3a8a] text-white"
-                          : "border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-200"
-                      }`}>
-                        {message.body}
-                      </p>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {selectedTicket.status !== "RESOLVED" && selectedTicket.status !== "CLOSED" ? (
-                <form onSubmit={sendReply} className="border-t border-slate-100 dark:border-slate-700 p-4">
-                  <label htmlFor="reply" className="sr-only">Reply to request</label>
-                  <div className="flex flex-col gap-3 sm:flex-row">
-                    <textarea
-                      id="reply"
-                      value={reply}
-                      onChange={(event) => setReply(event.target.value)}
-                      rows={2}
-                      placeholder="Write a clear response for the requester"
-                      className="min-h-11 flex-1 rounded-md border border-slate-300 dark:border-slate-600 p-3 text-sm outline-none focus:border-[#1e3a8a] focus:ring-2 focus:ring-blue-100 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                    />
-                    <div className="flex gap-2 sm:flex-col">
-                      <button type="submit" className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-md bg-[#1e3a8a] px-4 text-sm font-bold text-white hover:bg-[#1e40af]">
-                        <Send size={16} /> Reply
-                      </button>
-                      <button type="button" onClick={resolve} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-md border border-emerald-200 dark:border-emerald-800 px-4 text-sm font-bold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
-                        <CheckCircle2 size={16} /> Resolve
-                      </button>
-                    </div>
-                  </div>
-                </form>
+            {/* Messages Thread */}
+            <div className="flex-1 space-y-4 p-5 overflow-y-auto">
+              {messages.length === 0 ? (
+                <div className="text-center py-8 text-sm text-slate-500 dark:text-slate-400">No messages yet.</div>
               ) : (
-                <p className="flex items-center gap-2 border-t border-emerald-100 dark:border-emerald-900/30 bg-emerald-50 dark:bg-emerald-900/10 p-4 text-sm font-semibold text-emerald-800 dark:text-emerald-400">
-                  <CheckCircle2 size={17} /> Resolution recorded. This request is closed.
-                </p>
+                messages.map((message) => (
+                  <div key={message.id} className={`flex flex-col ${message.author_type === "STAFF" ? "items-end" : "items-start"}`}>
+                    <span className="mb-1 text-xs text-slate-500 dark:text-slate-400">
+                      {message.author_name} · {formatTimeAgo(message.created_at)}
+                    </span>
+                    <p className={`max-w-xl rounded-lg p-3 text-sm leading-6 ${
+                      message.author_type === "STAFF"
+                        ? "bg-[#1e3a8a] text-white"
+                        : "border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-200"
+                    }`}>
+                      {message.body}
+                    </p>
+                  </div>
+                ))
               )}
-            </>
-          )}
-        </section>
-      </div>
+            </div>
+
+            {/* Reply Input */}
+            {selectedTicket.status !== "RESOLVED" && selectedTicket.status !== "CLOSED" ? (
+              <form onSubmit={sendReply} className="border-t border-slate-100 dark:border-slate-700 p-4">
+                <label htmlFor="reply" className="sr-only">Reply to request</label>
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <textarea
+                    id="reply"
+                    value={reply}
+                    onChange={(event) => setReply(event.target.value)}
+                    rows={2}
+                    placeholder="Write a clear response for the requester"
+                    className="min-h-11 flex-1 rounded-md border border-slate-300 dark:border-slate-600 p-3 text-sm outline-none focus:border-[#1e3a8a] focus:ring-2 focus:ring-blue-100 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                  />
+                  <div className="flex gap-2 sm:flex-col">
+                    <button type="submit" className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-md bg-[#1e3a8a] px-4 text-sm font-bold text-white hover:bg-[#1e40af]">
+                      <Send size={16} /> Reply
+                    </button>
+                    <button type="button" onClick={resolve} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-md border border-emerald-200 dark:border-emerald-800 px-4 text-sm font-bold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
+                      <CheckCircle2 size={16} /> Resolve
+                    </button>
+                  </div>
+                </div>
+              </form>
+            ) : (
+              <p className="flex items-center gap-2 border-t border-emerald-100 dark:border-emerald-900/30 bg-emerald-50 dark:bg-emerald-900/10 p-4 text-sm font-semibold text-emerald-800 dark:text-emerald-400">
+                <CheckCircle2 size={17} /> Resolution recorded. This request is closed.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
