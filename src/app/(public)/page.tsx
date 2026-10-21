@@ -1,932 +1,257 @@
 "use client";
 
 import Link from "next/link";
+import { useLanguage } from "@/components/LanguageProvider";
 import {
   ArrowRight,
+  FileCheck2,
+  Heart,
+  ShieldCheck,
+  Users,
   Search,
-  Shield,
+  ClipboardList,
   Network,
   Store,
   UserRound,
   FileText,
-  CheckCircle2,
-  Clock,
-  ChevronRight,
-  Phone,
-  Mail,
   Headphones,
-  BadgeCheck,
-  Wallet,
-  FileCheck,
-  ReceiptText,
+  Mail,
+  Phone,
   Bell,
-  Users,
-  LayoutDashboard,
-  Loader2,
-  Lock,
-  Star,
-  MapPin,
-  Calendar,
-  ExternalLink,
-  HardHat,
-  Wheat,
-  Scissors,
-  Zap,
-  Heart,
+  ChevronDown,
 } from "lucide-react";
-import { useState } from "react";
+import ManualAdSlider from "@/components/ads/ManualAdSlider";
 
-// ── Hero Section ────────────────────────────────────────────────────────────
-function HeroSection() {
-  const [search, setSearch] = useState("");
+const portals = [
+  {
+    title: "Distributor",
+    description: "Manage retailer networks, service requests and regional operations.",
+    action: "Network login",
+    href: "/distributor/login",
+    icon: Network,
+    tone: "violet", ta: ["விநியோகஸ்தர்", "சில்லறை வலையமைப்பு, சேவை கோரிக்கைகள் மற்றும் பிராந்திய செயல்பாடுகளை நிர்வகிக்கவும்.", "வலையமைப்பு உள்நுழைவு"],
+  },
+  {
+    title: "Retail partner",
+    description: "Manage customer applications, transactions and daily operations.",
+    action: "Partner login",
+    href: "/retailer/login",
+    icon: Store,
+    tone: "green", ta: ["சில்லறை கூட்டாளர்", "வாடிக்கையாளர் விண்ணப்பங்கள், பரிவர்த்தனைகள் மற்றும் தினசரி செயல்பாடுகளை நிர்வகிக்கவும்.", "கூட்டாளர் உள்நுழைவு"],
+  },
+  {
+    title: "Customer portal",
+    description: "Track applications, access certificates and manage your profile.",
+    action: "Customer login",
+    href: "/user/login",
+    icon: UserRound,
+    tone: "blue", ta: ["வாடிக்கையாளர் தளம்", "விண்ணப்பங்களைக் கண்காணித்து சான்றிதழ்களை அணுகி சுயவிவரத்தை நிர்வகிக்கவும்.", "வாடிக்கையாளர் உள்நுழைவு"],
+  },
+  {
+    title: "New registration",
+    description: "Explore available services and start your registration.",
+    action: "Get started",
+    href: "/register",
+    icon: FileText,
+    tone: "orange", ta: ["புதிய பதிவு", "கிடைக்கும் சேவைகளைப் பார்த்து உங்கள் பதிவைத் தொடங்குங்கள்.", "தொடங்குங்கள்"],
+  },
+];
 
+const services = [
+  { title: "Worker registration", description: "Register as a labour welfare beneficiary.", fee: "Check fee", ta: ["தொழிலாளர் பதிவு", "தொழிலாளர் நலப் பயனாளியாகப் பதிவு செய்யுங்கள்.", "கட்டணத்தைப் பார்க்க"], icon: Users },
+  { title: "Accident relief", description: "Information and applications for eligible assistance.", fee: "View details", ta: ["விபத்து நிவாரணம்", "தகுதியான உதவிக்கான தகவல்கள் மற்றும் விண்ணப்பங்கள்.", "விவரங்களைப் பார்க்க"], icon: ShieldCheck },
+  { title: "Scholarship scheme", description: "Explore education assistance for eligible families.", fee: "View details", ta: ["கல்வி உதவித்தொகை", "தகுதியான குடும்பங்களுக்கான கல்வி உதவியைப் பாருங்கள்.", "விவரங்களைப் பார்க்க"], icon: FileCheck2 },
+  { title: "Housing assistance", description: "Explore available housing-related benefits.", fee: "View details", ta: ["வீட்டு உதவி", "கிடைக்கும் வீட்டு வசதி சார்ந்த நலன்களைப் பாருங்கள்.", "விவரங்களைப் பார்க்க"], icon: Heart },
+  { title: "Maternity benefit", description: "Review eligibility and application requirements.", fee: "View details", ta: ["மகப்பேறு நல உதவி", "தகுதி மற்றும் விண்ணப்பத் தேவைகளைப் பாருங்கள்.", "விவரங்களைப் பார்க்க"], icon: Users },
+  { title: "Tool kit assistance", description: "Find support options for eligible workers.", fee: "View details", ta: ["கருவிப்பெட்டி உதவி", "தகுதியான தொழிலாளர்களுக்கான ஆதரவு வாய்ப்புகளைக் கண்டறியுங்கள்.", "விவரங்களைப் பார்க்க"], icon: ClipboardList },
+];
+
+const notices = [
+  ["Check the latest scheme application deadlines.", "திட்டங்களுக்கான சமீபத்திய விண்ணப்பக் காலக்கெடுவைப் பாருங்கள்."],
+  ["Review your required documents before applying.", "விண்ணப்பிக்கும் முன் தேவையான ஆவணங்களைச் சரிபார்க்கவும்."],
+  ["Keep your registered mobile number accessible for OTP verification.", "OTP சரிபார்ப்புக்காக பதிவு செய்த கைபேசி எண்ணைத் தயாராக வைத்திருங்கள்."],
+];
+
+export default function HomePage() {
+  const { language } = useLanguage();
+  const tamil = language === "ta";
   return (
-    <section
-      className="relative overflow-hidden"
-      style={{
-        background: "linear-gradient(135deg, #EEF2FB 0%, #DBEAFE 40%, #F0F4FF 100%)",
-      }}
-      aria-label="Hero"
-    >
-      {/* Decorative shapes */}
-      <div
-        className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full opacity-20 pointer-events-none"
-        style={{
-          background: "radial-gradient(circle, #1D3F8F 0%, transparent 70%)",
-          transform: "translate(30%, -30%)",
-        }}
-        aria-hidden="true"
-      />
-      <div
-        className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full opacity-10 pointer-events-none"
-        style={{
-          background: "radial-gradient(circle, #1D3F8F 0%, transparent 70%)",
-          transform: "translate(-40%, 40%)",
-        }}
-        aria-hidden="true"
-      />
+    <div className="ls-home">
+      <div className="ls-main">
+        {/* Hero */}
+        <section className="ls-hero">
+          <div className="ls-hero-copy">
+            <h1>{tamil ? "LabourSeva தளத்திற்கு வரவேற்கிறோம்" : "Welcome to LabourSeva Portal"}</h1>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Text */}
-          <div>
-            <div
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-6 border"
-              style={{
-                background: "rgba(29,63,143,0.08)",
-                borderColor: "rgba(29,63,143,0.2)",
-                color: "var(--primary)",
-              }}
-            >
-              <Shield size={12} />
-              Secure & Official Platform
-            </div>
-
-            <h1
-              className="text-4xl sm:text-5xl font-bold leading-tight mb-6"
-              style={{ color: "var(--text)", lineHeight: "1.15" }}
-            >
-              Labour welfare{" "}
-              <span style={{ color: "var(--primary)" }}>services,</span>
-              <br />
-              made simpler
-            </h1>
-
-            <p
-              className="text-lg leading-relaxed mb-8"
-              style={{ color: "var(--text-secondary)", maxWidth: 520 }}
-            >
-              Access government welfare schemes, certificates, financial
-              assistance and more — all in one place. LabourSeva is committed
-              to the well-being and growth of every worker in Tamil Nadu.
+            <p className="ls-hero-description">
+              {tamil ? "தொழிலாளர் ஆவணங்கள், நிதிச் சேவைகள் மற்றும் சமூகப் பாதுகாப்பு நலன்களுக்கான ஒருங்கிணைந்த தளம். சேவைகளை எளிதாகப் பெற கீழே உள்ள தளத்தைத் தேர்ந்தெடுக்கவும்." : "A unified digital platform for labour documentation, financial services, and social security benefits. Access your dedicated portal below to avail services efficiently."}
             </p>
 
-            {/* Search bar */}
-            <div className="relative mb-8 max-w-lg">
-              <label htmlFor="hero-search" className="sr-only">
-                Search services
-              </label>
-              <Search
-                size={18}
-                className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"
-                style={{ color: "var(--text-muted)" }}
-                aria-hidden="true"
-              />
-              <input
-                id="hero-search"
-                type="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search for services, schemes, certificates..."
-                className="w-full h-13 pl-11 pr-32 text-sm border rounded-full outline-none transition-all"
-                style={{
-                  height: 52,
-                  background: "#fff",
-                  borderColor: "var(--border-strong)",
-                  color: "var(--text)",
-                  boxShadow: "var(--shadow-sm)",
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = "var(--primary)";
-                  e.target.style.boxShadow = "var(--shadow-focus)";
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = "var(--border-strong)";
-                  e.target.style.boxShadow = "var(--shadow-sm)";
-                }}
-              />
-              <button
-                className="absolute right-2 top-1/2 -translate-y-1/2 h-9 px-5 rounded-full text-sm font-medium transition-all hover:shadow-[var(--shadow-primary)] active:scale-[0.98]"
-                style={{ background: "var(--primary)", color: "var(--on-primary)" }}
-              >
-                Search
-              </button>
-            </div>
-
-            {/* CTA buttons */}
-            <div className="flex flex-wrap gap-3 mb-6">
-              <Link
-                href="/services"
-                className="inline-flex items-center gap-2 h-12 px-6 rounded-full text-sm font-semibold transition-all hover:shadow-[var(--shadow-primary)] active:scale-[0.98]"
-                style={{ background: "var(--primary)", color: "var(--on-primary)" }}
-              >
-                Explore services
-                <ArrowRight size={16} />
+            <div className="ls-hero-actions">
+              <Link href="/login" className="ls-button ls-button-primary">
+                {tamil ? "தளங்களை அணுகவும்" : "Access Portals"} <ChevronDown size={18} />
               </Link>
-              <Link
-                href="/track"
-                className="inline-flex items-center gap-2 h-12 px-6 rounded-full text-sm font-semibold border-2 transition-all hover:bg-[var(--primary-tint)] active:scale-[0.98]"
-                style={{
-                  borderColor: "var(--primary)",
-                  color: "var(--primary)",
-                }}
-              >
-                <FileText size={16} />
-                Track application
+              <Link href="/help" className="ls-button ls-button-outline">
+                {tamil ? "உதவி மற்றும் வழிகாட்டுதல்" : "Help & Guidelines"}
               </Link>
             </div>
+          </div>
+        </section>
 
-            {/* Trust badge */}
-            <div
-              className="inline-flex items-center gap-2 text-xs"
-              style={{ color: "var(--text-muted)" }}
-            >
-              <Lock size={13} />
-              Your information is secure and used only for service delivery.
+        {/* Search and statistics */}
+        <section className="ls-overview" aria-label="Find services and platform overview">
+          <form action="/services" method="get" className="ls-search">
+            <Search size={21} />
+            <input
+              type="search"
+              name="q"
+              placeholder={tamil ? "சேவைகள், திட்டங்கள் மற்றும் சான்றிதழ்களைத் தேடுங்கள்..." : "Search services, schemes and certificates..."}
+              aria-label={tamil ? "சேவைகளைத் தேடுங்கள்" : "Search services"}
+            />
+            <button type="submit">{tamil ? "தேடுக" : "Search"}</button>
+          </form>
+
+          <div className="ls-stats">
+            <div className="ls-stat">
+              <span className="ls-stat-icon"><FileCheck2 /></span>
+              <div><strong>Services</strong><span>Explore the catalogue</span></div>
+            </div>
+            <div className="ls-stat">
+              <span className="ls-stat-icon green"><Heart /></span>
+              <div><strong>Welfare schemes</strong><span>Check eligibility</span></div>
+            </div>
+            <div className="ls-stat">
+              <span className="ls-stat-icon orange"><Users /></span>
+              <div><strong>Worker support</strong><span>Find relevant services</span></div>
+            </div>
+            <div className="ls-stat">
+              <span className="ls-stat-icon green"><ShieldCheck /></span>
+              <div><strong>Secure access</strong><span>Protected workflows</span></div>
             </div>
           </div>
+        </section>
 
-          {/* Illustration */}
-          <div className="relative hidden lg:flex items-center justify-center">
-            <WorkerIllustration />
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function WorkerIllustration() {
-  const workers = [
-    { icon: HardHat, label: "Construction", color: "#F59E0B", bg: "#FFFBEB" },
-    { icon: Scissors, label: "Textile", color: "#EC4899", bg: "#FDF2F8" },
-    { icon: Wheat, label: "Agriculture", color: "#10B981", bg: "#ECFDF5" },
-    { icon: Zap, label: "Industrial", color: "#3B82F6", bg: "#EFF6FF" },
-  ];
-
-  return (
-    <div className="relative w-[420px] h-[420px]">
-      {/* Central card */}
-      <div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-52 rounded-2xl p-5 text-center z-10"
-        style={{
-          background: "white",
-          boxShadow: "0 20px 60px rgba(29,63,143,0.15)",
-        }}
-      >
-        <div
-          className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3"
-          style={{ background: "var(--primary-tint)" }}
-        >
-          <Heart size={28} style={{ color: "var(--primary)" }} />
-        </div>
-        <div className="font-bold text-sm mb-1" style={{ color: "var(--text)" }}>
-          10 Lakh+
-        </div>
-        <div className="text-xs" style={{ color: "var(--text-muted)" }}>
-          Workers registered
-        </div>
-        <div className="mt-3 flex items-center justify-center gap-1">
-          {[1,2,3,4,5].map(i => (
-            <Star key={i} size={10} fill="#F59E0B" stroke="none" />
-          ))}
-        </div>
-        <div className="text-[10px] mt-1" style={{ color: "var(--text-muted)" }}>
-          Trusted platform
-        </div>
-      </div>
-
-      {/* Worker cards orbiting */}
-      {workers.map((w, i) => {
-        const angles = [315, 45, 135, 225];
-        const angle = (angles[i] * Math.PI) / 180;
-        const r = 155;
-        const x = Math.cos(angle) * r;
-        const y = Math.sin(angle) * r;
-        const Icon = w.icon;
-        return (
-          <div
-            key={w.label}
-            className="absolute w-28 rounded-xl p-3 text-center"
-            style={{
-              background: "white",
-              boxShadow: "0 8px 24px rgba(29,63,143,0.10)",
-              left: `calc(50% + ${x}px - 56px)`,
-              top: `calc(50% + ${y}px - 40px)`,
-            }}
-          >
-            <div
-              className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2"
-              style={{ background: w.bg }}
-            >
-              <Icon size={20} style={{ color: w.color }} />
+        {/* Portals */}
+        <section className="ls-section ls-portal-section">
+          <div className="ls-section-heading">
+            <div>
+              <span className="ls-section-kicker">{tamil ? "தொடங்குங்கள்" : "GET STARTED"}</span>
+              <h2>{tamil ? "உங்கள் தளத்தைத் தேர்ந்தெடுக்கவும்" : "Choose your portal"}</h2>
+              <p>{tamil ? "உங்கள் பங்கிற்கேற்ற தளத்தைத் தேர்ந்தெடுக்கவும்." : "Select the portal that matches your role."}</p>
             </div>
-            <div className="text-xs font-medium" style={{ color: "var(--text)" }}>
-              {w.label}
-            </div>
-          </div>
-        );
-      })}
-
-      {/* Decorative ring */}
-      <div
-        className="absolute inset-0 rounded-full border-2 border-dashed pointer-events-none"
-        style={{ borderColor: "rgba(29,63,143,0.12)" }}
-        aria-hidden="true"
-      />
-    </div>
-  );
-}
-
-// ── Statistics Strip ─────────────────────────────────────────────────────────
-function StatsSection() {
-  const stats = [
-    { value: "50+", label: "Services available", icon: FileCheck },
-    { value: "25+", label: "Welfare schemes", icon: Heart },
-    { value: "10L+", label: "Workers registered", icon: Users },
-    { value: "99.9%", label: "Uptime reliability", icon: BadgeCheck },
-  ];
-
-  return (
-    <section
-      className="border-y"
-      style={{ background: "var(--surface)", borderColor: "var(--border)" }}
-      aria-label="Platform statistics"
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map(({ value, label, icon: Icon }) => (
-            <div
-              key={label}
-              className="flex items-center gap-4 p-4 rounded-[var(--radius-lg)] border transition-shadow hover:shadow-[var(--shadow-md)]"
-              style={{ borderColor: "var(--border)", background: "var(--bg)" }}
-            >
-              <div
-                className="w-12 h-12 rounded-[var(--radius-md)] flex items-center justify-center flex-shrink-0"
-                style={{ background: "var(--primary-tint)" }}
-              >
-                <Icon size={22} style={{ color: "var(--primary)" }} />
-              </div>
-              <div>
-                <div
-                  className="text-2xl font-bold tabular"
-                  style={{ color: "var(--text)" }}
-                >
-                  {value}
-                </div>
-                <div className="text-xs" style={{ color: "var(--text-muted)" }}>
-                  {label}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ── Portal Cards ─────────────────────────────────────────────────────────────
-function PortalSection() {
-  const portals = [
-    {
-      icon: Network,
-      title: "Distributor",
-      description:
-        "Handle bulk service requests, manage regional logistics and monitor retailer networks across your territory.",
-      cta: "Network Login",
-      href: "/distributor/login",
-      accent: "#3B82F6",
-      accentBg: "#EFF6FF",
-    },
-    {
-      icon: Store,
-      title: "Retail Partner",
-      description:
-        "Business dashboard for managing customer applications, transactions and daily Kendra store operations.",
-      cta: "Partner Login",
-      href: "/retailer/login",
-      accent: "#8B5CF6",
-      accentBg: "#F5F3FF",
-    },
-    {
-      icon: UserRound,
-      title: "Customer Portal",
-      description:
-        "Track your applications, book appointments, access certificates and manage your personal profile securely.",
-      cta: "Consumer Login",
-      href: "/user/login",
-      accent: "#1D3F8F",
-      accentBg: "#EEF2FB",
-      featured: true,
-    },
-    {
-      icon: FileText,
-      title: "New Registration",
-      description:
-        "New to LabourSeva? Explore services, check your eligibility and register for an account in minutes.",
-      cta: "Get Started",
-      href: "/register",
-      accent: "#10B981",
-      accentBg: "#ECFDF5",
-    },
-  ];
-
-  return (
-    <section
-      className="py-16 lg:py-24"
-      style={{ background: "var(--bg-subtle)" }}
-      aria-labelledby="portals-heading"
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2
-            id="portals-heading"
-            className="text-3xl sm:text-4xl font-bold mb-4"
-            style={{ color: "var(--text)" }}
-          >
-            Choose your portal
-          </h2>
-          <p className="text-lg max-w-xl mx-auto" style={{ color: "var(--text-secondary)" }}>
-            Select the portal that matches your role to access your personalised
-            dashboard and services.
-          </p>
-        </div>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {portals.map((p) => {
-            const Icon = p.icon;
-            return (
-              <div
-                key={p.title}
-                className={`group relative flex flex-col rounded-[var(--radius-lg)] border transition-all duration-200 hover:-translate-y-1 hover:shadow-[var(--shadow-md)] ${
-                  p.featured ? "ring-2 ring-[var(--primary)]" : ""
-                }`}
-                style={{
-                  background: "var(--surface)",
-                  borderColor: "var(--border)",
-                  padding: "24px",
-                }}
-              >
-                {p.featured && (
-                  <div
-                    className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-xs font-semibold"
-                    style={{ background: "var(--primary)", color: "var(--on-primary)" }}
-                  >
-                    Most used
-                  </div>
-                )}
-
-                <div
-                  className="w-14 h-14 rounded-[var(--radius-md)] flex items-center justify-center mb-5"
-                  style={{ background: p.accentBg }}
-                >
-                  <Icon size={26} style={{ color: p.accent }} />
-                </div>
-
-                <h3
-                  className="font-bold text-lg mb-2"
-                  style={{ color: "var(--text)" }}
-                >
-                  {p.title}
-                </h3>
-                <p
-                  className="text-sm leading-relaxed mb-6 flex-1"
-                  style={{ color: "var(--text-secondary)" }}
-                >
-                  {p.description}
-                </p>
-
-                <Link
-                  href={p.href}
-                  className="flex items-center justify-center gap-2 h-11 rounded-full text-sm font-semibold transition-all border-2 hover:shadow-md active:scale-[0.98]"
-                  style={
-                    p.featured
-                      ? {
-                          background: "var(--primary)",
-                          color: "var(--on-primary)",
-                          borderColor: "var(--primary)",
-                        }
-                      : {
-                          background: "transparent",
-                          color: p.accent,
-                          borderColor: p.accent,
-                        }
-                  }
-                >
-                  {p.cta}
-                  <ChevronRight size={15} />
-                </Link>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ── How it works ─────────────────────────────────────────────────────────────
-function HowItWorksSection() {
-  const steps = [
-    {
-      num: "01",
-      icon: UserRound,
-      title: "Register & verify",
-      desc: "Create your account with your mobile number. Verify your identity with a one-time password sent to your phone.",
-    },
-    {
-      num: "02",
-      icon: FileText,
-      title: "Choose a service",
-      desc: "Browse our catalogue of 50+ welfare services and schemes. Check eligibility and required documents before applying.",
-    },
-    {
-      num: "03",
-      icon: ReceiptText,
-      title: "Apply & pay",
-      desc: "Fill in the application form and pay the service fee securely via UPI, card or net banking through Razorpay.",
-    },
-    {
-      num: "04",
-      icon: BadgeCheck,
-      title: "Track & receive",
-      desc: "Track your application status in real time. Receive your certificate or benefit digitally once approved.",
-    },
-  ];
-
-  return (
-    <section
-      className="py-16 lg:py-24"
-      style={{ background: "var(--bg)" }}
-      aria-labelledby="how-it-works-heading"
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-14">
-          <h2
-            id="how-it-works-heading"
-            className="text-3xl sm:text-4xl font-bold mb-4"
-            style={{ color: "var(--text)" }}
-          >
-            How it works
-          </h2>
-          <p className="text-lg" style={{ color: "var(--text-secondary)" }}>
-            Get your welfare services in four simple steps.
-          </p>
-        </div>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {steps.map((s, i) => {
-            const Icon = s.icon;
-            return (
-              <div key={s.num} className="relative text-center">
-                {/* Connector line */}
-                {i < steps.length - 1 && (
-                  <div
-                    className="hidden lg:block absolute top-10 left-[calc(50%+3rem)] w-[calc(100%-6rem)] h-px"
-                    style={{ background: "var(--border)" }}
-                    aria-hidden="true"
-                  />
-                )}
-
-                <div
-                  className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5 relative z-10"
-                  style={{ background: "var(--primary-tint)" }}
-                >
-                  <Icon size={32} style={{ color: "var(--primary)" }} />
-                  <span
-                    className="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
-                    style={{ background: "var(--primary)", color: "var(--on-primary)" }}
-                  >
-                    {i + 1}
-                  </span>
-                </div>
-
-                <h3 className="font-semibold text-base mb-2" style={{ color: "var(--text)" }}>
-                  {s.title}
-                </h3>
-                <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                  {s.desc}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ── Featured Services ─────────────────────────────────────────────────────────
-function ServicesSection() {
-  const categories = [
-    "All", "Construction", "Agriculture", "Textile", "Industrial", "Domestic",
-  ];
-  const [active, setActive] = useState("All");
-
-  const services = [
-    { name: "Worker Registration", fee: "₹50", category: "All", icon: UserRound, desc: "Register as a labour welfare beneficiary." },
-    { name: "Accident Relief Fund", fee: "Free", category: "Construction", icon: Shield, desc: "Financial assistance for workplace accidents." },
-    { name: "Scholarship Scheme", fee: "Free", category: "All", icon: Star, desc: "Education scholarships for workers' children." },
-    { name: "Housing Loan Subsidy", fee: "₹100", category: "Construction", icon: MapPin, desc: "Subsidised home loan assistance for workers." },
-    { name: "Maternity Benefit", fee: "Free", category: "Textile", icon: Heart, desc: "Financial support for women workers during maternity." },
-    { name: "Tool Kit Assistance", fee: "Free", category: "Industrial", icon: Zap, desc: "Free tool kit for skilled artisan workers." },
-  ];
-
-  return (
-    <section
-      className="py-16 lg:py-24"
-      style={{ background: "var(--bg-subtle)" }}
-      aria-labelledby="services-heading"
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
-          <div>
-            <h2
-              id="services-heading"
-              className="text-3xl sm:text-4xl font-bold mb-2"
-              style={{ color: "var(--text)" }}
-            >
-              Featured services
-            </h2>
-            <p style={{ color: "var(--text-secondary)" }}>
-              Explore welfare services available for workers in Tamil Nadu.
-            </p>
-          </div>
-          <Link
-            href="/services"
-            className="flex-shrink-0 inline-flex items-center gap-1.5 text-sm font-semibold transition-colors hover:opacity-80"
-            style={{ color: "var(--primary)" }}
-          >
-            View all services <ArrowRight size={15} />
-          </Link>
-        </div>
-
-        {/* Category filter */}
-        <div
-          className="flex items-center gap-2 overflow-x-auto pb-2 mb-6 scrollbar-none"
-          role="tablist"
-          aria-label="Service categories"
-        >
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              role="tab"
-              aria-selected={active === cat}
-              onClick={() => setActive(cat)}
-              className="flex-shrink-0 h-8 px-4 rounded-full text-sm font-medium transition-all border"
-              style={
-                active === cat
-                  ? {
-                      background: "var(--primary)",
-                      color: "var(--on-primary)",
-                      borderColor: "var(--primary)",
-                    }
-                  : {
-                      background: "var(--surface)",
-                      color: "var(--text-secondary)",
-                      borderColor: "var(--border)",
-                    }
-              }
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {services
-            .filter((s) => active === "All" || s.category === active || active === "All")
-            .map((service) => {
-              const Icon = service.icon;
-              return (
-                <div
-                  key={service.name}
-                  className="group flex gap-4 p-5 rounded-[var(--radius-lg)] border transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)] cursor-pointer"
-                  style={{ background: "var(--surface)", borderColor: "var(--border)" }}
-                >
-                  <div
-                    className="w-11 h-11 rounded-[var(--radius-md)] flex items-center justify-center flex-shrink-0"
-                    style={{ background: "var(--primary-tint)" }}
-                  >
-                    <Icon size={20} style={{ color: "var(--primary)" }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <h3
-                        className="font-semibold text-sm leading-tight"
-                        style={{ color: "var(--text)" }}
-                      >
-                        {service.name}
-                      </h3>
-                      <span
-                        className="flex-shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full"
-                        style={{
-                          background: "var(--success-bg)",
-                          color: "var(--success-text)",
-                        }}
-                      >
-                        {service.fee}
-                      </span>
-                    </div>
-                    <p
-                      className="text-xs mt-1 leading-relaxed"
-                      style={{ color: "var(--text-muted)" }}
-                    >
-                      {service.desc}
-                    </p>
-                    <div
-                      className="mt-2 inline-flex items-center gap-1 text-xs font-medium group-hover:gap-2 transition-all"
-                      style={{ color: "var(--primary)" }}
-                    >
-                      Apply now <ChevronRight size={12} />
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ── Help & Notices ────────────────────────────────────────────────────────────
-function HelpAndNoticesSection() {
-  const notices = [
-    {
-      date: "09 Oct 2026",
-      title: "Extension of scholarship application deadline for construction workers",
-      isNew: true,
-    },
-    {
-      date: "05 Oct 2026",
-      title: "Update of KYC details required for continued benefit eligibility",
-      isNew: true,
-    },
-    {
-      date: "01 Oct 2026",
-      title: "Awareness camp on labour welfare schemes to be held in all districts",
-      isNew: false,
-    },
-    {
-      date: "25 Sep 2026",
-      title: "New tool kit assistance scheme launched for artisan workers",
-      isNew: false,
-    },
-  ];
-
-  return (
-    <section
-      className="py-16 lg:py-24"
-      style={{ background: "var(--bg)" }}
-      aria-label="Help and notices"
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid lg:grid-cols-2 gap-10">
-          {/* Support panel */}
-          <div
-            className="rounded-[var(--radius-lg)] border p-8"
-            style={{
-              background: "linear-gradient(135deg, #EEF2FB 0%, #DBEAFE 100%)",
-              borderColor: "rgba(29,63,143,0.15)",
-            }}
-          >
-            <div
-              className="w-16 h-16 rounded-full flex items-center justify-center mb-5"
-              style={{ background: "var(--primary)", boxShadow: "var(--shadow-primary)" }}
-            >
-              <Headphones size={28} color="white" />
-            </div>
-            <h2 className="text-2xl font-bold mb-3" style={{ color: "var(--text)" }}>
-              Need assistance?
-            </h2>
-            <p className="leading-relaxed mb-6" style={{ color: "var(--text-secondary)" }}>
-              Our support team is here to help you with portal access, service
-              selection or technical issues. We respond within 24 hours.
-            </p>
-
-            <div className="space-y-3 mb-6">
-              <a
-                href="tel:18004251234"
-                className="flex items-center gap-3 group"
-              >
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{ background: "white", boxShadow: "var(--shadow-xs)" }}
-                >
-                  <Phone size={16} style={{ color: "var(--primary)" }} />
-                </div>
-                <div>
-                  <div className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
-                    Toll-free helpline (placeholder)
-                  </div>
-                  <div
-                    className="font-semibold group-hover:underline"
-                    style={{ color: "var(--text)" }}
-                  >
-                    1800 425 1234
-                  </div>
-                </div>
-              </a>
-
-              <a
-                href="mailto:support@labourseva.com"
-                className="flex items-center gap-3 group"
-              >
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{ background: "white", boxShadow: "var(--shadow-xs)" }}
-                >
-                  <Mail size={16} style={{ color: "var(--primary)" }} />
-                </div>
-                <div>
-                  <div className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
-                    Email support
-                  </div>
-                  <div
-                    className="font-semibold group-hover:underline"
-                    style={{ color: "var(--text)" }}
-                  >
-                    support@labourseva.com
-                  </div>
-                </div>
-              </a>
-            </div>
-
-            <Link
-              href="/help"
-              className="inline-flex items-center gap-2 h-11 px-6 rounded-full text-sm font-semibold transition-all hover:shadow-[var(--shadow-primary)] active:scale-[0.98]"
-              style={{ background: "var(--primary)", color: "var(--on-primary)" }}
-            >
-              Visit Help Centre
-              <ArrowRight size={16} />
+            <Link href="/login" className="ls-text-link">
+              {tamil ? "அனைத்து தளங்களையும் பார்க்க" : "View all portals"} <ArrowRight size={17} />
             </Link>
           </div>
 
-          {/* Notices */}
-          <div>
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-2xl font-bold" style={{ color: "var(--text)" }}>
-                Latest notices
-              </h2>
-              <Link
-                href="/news"
-                className="text-sm font-medium flex items-center gap-1 transition-colors hover:opacity-80"
-                style={{ color: "var(--primary)" }}
-              >
-                View all <ChevronRight size={14} />
-              </Link>
-            </div>
+          <div className="ls-portal-grid">
+            {portals.map((portal) => {
+              const Icon = portal.icon;
+              return (
+                <article className="ls-portal-card" key={portal.title}>
+                  <span className={`ls-icon-tile ${portal.tone}`}>
+                    <Icon size={27} />
+                  </span>
+                  <h3>{tamil ? portal.ta[0] : portal.title}</h3>
+                  <p>{tamil ? portal.ta[1] : portal.description}</p>
+                  <Link href={portal.href} className="ls-card-button">
+                    {tamil ? portal.ta[2] : portal.action} <ArrowRight size={17} />
+                  </Link>
+                </article>
+              );
+            })}
+          </div>
+        </section>
 
-            <div className="space-y-3">
-              {notices.map((n, i) => (
-                <article
-                  key={i}
-                  className="flex gap-4 p-4 rounded-[var(--radius-md)] border transition-all hover:shadow-[var(--shadow-sm)] hover:border-[var(--primary)] cursor-pointer group"
-                  style={{
-                    background: "var(--surface)",
-                    borderColor: "var(--border)",
-                  }}
-                >
-                  <div
-                    className="w-10 h-10 rounded-[var(--radius-sm)] flex items-center justify-center flex-shrink-0 mt-0.5"
-                    style={{ background: "var(--primary-tint)" }}
-                  >
-                    <Bell size={16} style={{ color: "var(--primary)" }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                        {n.date}
-                      </span>
-                      {n.isNew && (
-                        <span
-                          className="px-1.5 py-0.5 rounded text-[10px] font-bold"
-                          style={{
-                            background: "var(--danger-bg)",
-                            color: "var(--danger-text)",
-                          }}
-                        >
-                          NEW
-                        </span>
-                      )}
-                    </div>
-                    <p
-                      className="text-sm font-medium leading-snug group-hover:text-[var(--primary)] transition-colors"
-                      style={{ color: "var(--text)" }}
-                    >
-                      {n.title}
-                    </p>
-                    <span
-                      className="inline-flex items-center gap-0.5 text-xs mt-1 transition-colors group-hover:gap-1"
-                      style={{ color: "var(--primary)" }}
-                    >
-                      Read more <ChevronRight size={10} />
-                    </span>
+        <section className="my-8 flex flex-col gap-5 rounded-2xl bg-gradient-to-r from-blue-950 to-blue-800 p-7 text-white sm:flex-row sm:items-center sm:justify-between sm:p-9">
+          <div className="max-w-2xl">
+            <span className="text-xs font-bold uppercase tracking-[0.18em] text-orange-300">{tamil ? "உள்ளூர் சில்லறை விற்பனையாளர்கள்" : "LOCAL RETAILERS"}</span>
+            <h2 className="mt-2 text-2xl font-black">{tamil ? "LabourSeva சந்தையைப் பாருங்கள்" : "Shop the LabourSeva marketplace"}</h2>
+            <p className="mt-2 text-sm leading-6 text-blue-100">{tamil ? "சரிபார்க்கப்பட்ட உள்ளூர் கடைகளின் பொருட்களை உலாவி, விற்பனையாளரை நேரடியாகத் தொடர்புகொள்ளுங்கள்." : "Browse products from verified local shops and contact retailers directly."}</p>
+          </div>
+          <Link href="/marketplace" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-white px-5 text-sm font-bold text-blue-950 hover:bg-blue-50">{tamil ? "சந்தையைப் பார்க்க" : "Browse marketplace"} <ArrowRight size={17} /></Link>
+        </section>
+
+        {/* Promotional Banner & Ad Slider (Google AdSense & Manual Ads) */}
+        <div className="w-full my-6">
+          <ManualAdSlider placement="HOME_SLIDER" />
+        </div>
+
+        {/* Services */}
+        <section className="ls-section">
+          <div className="ls-section-heading">
+            <div>
+              <span className="ls-section-kicker">{tamil ? "சேவை அடைவு" : "SERVICE DIRECTORY"}</span>
+              <h2>{tamil ? "எங்கள் சேவைகள்" : "Browse Our Services"}</h2>
+              <p>{tamil ? "விண்ணப்பிக்கும் முன் சேவை விவரங்கள் மற்றும் தகுதியைப் பாருங்கள்." : "Review service details and eligibility before applying."}</p>
+            </div>
+            <Link href="/services" className="ls-text-link">
+              {tamil ? "சேவைகளைப் பார்க்க" : "Browse services"} <ArrowRight size={17} />
+            </Link>
+          </div>
+
+          <div className="ls-service-grid">
+            {services.map((service) => {
+              const Icon = service.icon;
+              return (
+                <article className="ls-service-card" key={service.title}>
+                  <span className="ls-service-icon"><Icon size={22} /></span>
+                  <div className="ls-service-content">
+                    <h3>{tamil ? service.ta[0] : service.title}</h3>
+                    <p>{tamil ? service.ta[1] : service.description}</p>
+                    <Link href="/services" className="ls-service-link">
+                      {tamil ? service.ta[2] : service.fee} <ArrowRight size={15} />
+                    </Link>
                   </div>
                 </article>
-              ))}
-            </div>
+              );
+            })}
+          </div>
+        </section>
 
-            <div
-              className="mt-4 p-3 rounded-[var(--radius-sm)] text-xs text-center"
-              style={{
-                background: "var(--warning-bg)",
-                color: "var(--warning-text)",
-              }}
-            >
-              Sample notices shown for demonstration. Real announcements will be managed by administrators.
+        {/* Support and notices */}
+        <section className="ls-bottom-grid">
+          <div className="ls-support-panel">
+            <span className="ls-support-icon"><Headphones size={32} /></span>
+            <div>
+              <span className="ls-section-kicker">{tamil ? "உதவ நாங்கள் உள்ளோம்" : "WE ARE HERE TO HELP"}</span>
+              <h2>{tamil ? "உதவி தேவையா?" : "Need assistance?"}</h2>
+              <p>{tamil ? "பதிவு, விண்ணப்பங்கள் மற்றும் தள அணுகல் குறித்த வழிகாட்டுதலைப் பெறுங்கள்." : "Find guidance on registration, applications and portal access."}</p>
+              <div className="ls-contact-row">
+                <Link href="/help" className="ls-contact-item">
+                  <Headphones size={19} /> {tamil ? "உதவி மையம்" : "Help centre"}
+                </Link>
+                <Link href="/contact" className="ls-contact-item">
+                  <Mail size={19} /> {tamil ? "ஆதரவைத் தொடர்பு கொள்ளுங்கள்" : "Contact support"}
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-    </section>
-  );
-}
 
-// ── Trust banner ──────────────────────────────────────────────────────────────
-function TrustBanner() {
-  const items = [
-    { icon: Shield, label: "Secure platform", desc: "256-bit encryption" },
-    { icon: BadgeCheck, label: "Verified services", desc: "Government-linked" },
-    { icon: Clock, label: "24×7 availability", desc: "Always accessible" },
-    { icon: Wallet, label: "Safe payments", desc: "Razorpay powered" },
-  ];
-
-  return (
-    <section
-      className="py-10 border-y"
-      style={{ background: "var(--bg-subtle)", borderColor: "var(--border)" }}
-      aria-label="Trust signals"
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-          {items.map(({ icon: Icon, label, desc }) => (
-            <div key={label} className="flex items-center gap-3">
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                style={{ background: "var(--primary-tint)" }}
-              >
-                <Icon size={18} style={{ color: "var(--primary)" }} />
-              </div>
-              <div>
-                <div className="font-semibold text-sm" style={{ color: "var(--text)" }}>
-                  {label}
-                </div>
-                <div className="text-xs" style={{ color: "var(--text-muted)" }}>
-                  {desc}
-                </div>
-              </div>
+          <div className="ls-notices">
+            <div className="ls-notices-heading">
+              <h2><Bell size={20} /> {tamil ? "சமீபத்திய அறிவிப்புகள்" : "Latest notices"}</h2>
+              <Link href="/notices">{tamil ? "அனைத்தையும் பார்க்க" : "View all"} <ArrowRight size={15} /></Link>
             </div>
-          ))}
+            {notices.map((notice, index) => (
+              <article className="ls-notice" key={notice[0]}>
+                <span className="ls-notice-icon"><Bell size={17} /></span>
+                <div>
+                  <span className="ls-notice-date">Notice {String(index + 1).padStart(2, "0")}</span>
+                  <p>{tamil ? notice[1] : notice[0]}</p>
+                  <Link href="/notices">{tamil ? "அறிவிப்பைப் படிக்க" : "Read notice"} <ArrowRight size={14} /></Link>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <div className="ls-trust-strip">
+          <span><ShieldCheck size={18} /> {tamil ? "பாதுகாப்பான சேவை அணுகல்" : "Secure service access"}</span>
+          <span><FileCheck2 size={18} /> {tamil ? "தெளிவான விண்ணப்பப் படிகள்" : "Clear application steps"}</span>
+          <span><Phone size={18} /> {tamil ? "உதவி மற்றும் வழிகாட்டுதல்" : "Help and guidance"}</span>
         </div>
       </div>
-    </section>
-  );
-}
-
-// ── Page assembly ─────────────────────────────────────────────────────────────
-export default function HomePage() {
-  return (
-    <>
-      <HeroSection />
-      <StatsSection />
-      <PortalSection />
-      <HowItWorksSection />
-      <ServicesSection />
-      <HelpAndNoticesSection />
-      <TrustBanner />
-    </>
+    </div>
   );
 }

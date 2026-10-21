@@ -1,166 +1,173 @@
+"use client";
+
 import Link from "next/link";
 import {
-  Phone,
-  Mail,
-  MapPin,
   Facebook,
-  Twitter,
-  Youtube,
   Instagram,
-  ExternalLink,
+  Youtube,
+  Linkedin,
+  ArrowUp,
+  ArrowRight,
+  ShieldCheck,
+  Mail,
+  Phone,
 } from "lucide-react";
+import { useLanguage } from "@/components/LanguageProvider";
 
-const footerLinks = {
-  quickLinks: [
-    { label: "Home", href: "/" },
-    { label: "Services", href: "/services" },
-    { label: "Schemes", href: "/schemes" },
-    { label: "Downloads", href: "/downloads" },
-    { label: "Contact Us", href: "/contact" },
-  ],
-  support: [
-    { label: "Help & Guidelines", href: "/help" },
-    { label: "User Manuals", href: "/downloads#manuals" },
-    { label: "FAQ", href: "/help#faq" },
-    { label: "Grievance", href: "/grievance" },
-    { label: "Track Application", href: "/track" },
-  ],
-  about: [
-    { label: "About Us", href: "/about" },
-    { label: "Careers", href: "/careers" },
-    { label: "News & Updates", href: "/news" },
-    { label: "Tenders", href: "/tenders" },
-  ],
-  policies: [
-    { label: "Privacy Policy", href: "/privacy" },
-    { label: "Terms of Use", href: "/terms" },
-    { label: "Refund Policy", href: "/refund" },
-    { label: "Accessibility", href: "/accessibility" },
-    { label: "Sitemap", href: "/sitemap" },
-  ],
-};
+const footerGroups = [
+  {
+    title: "Quick links",
+    links: [
+      { label: "Home", href: "/" },
+      { label: "Services", href: "/services" },
+      { label: "Schemes", href: "/schemes" },
+      { label: "Downloads", href: "/downloads" },
+      { label: "Contact us", href: "/contact" },
+    ],
+  },
+  {
+    title: "Support",
+    links: [
+      { label: "Help & guidelines", href: "/help" },
+      { label: "User manuals", href: "/downloads#manuals" },
+      { label: "Frequently asked questions", href: "/help#faq" },
+      { label: "Grievance", href: "/grievance" },
+      { label: "Track application", href: "/track" },
+    ],
+  },
+  {
+    title: "About",
+    links: [
+      { label: "About LabourSeva", href: "/about" },
+      { label: "Careers", href: "/careers" },
+      { label: "News & updates", href: "/news" },
+      { label: "Tenders", href: "/tenders" },
+    ],
+  },
+  {
+    title: "Policies",
+    links: [
+      { label: "Privacy policy", href: "/privacy" },
+      { label: "Terms of use", href: "/terms" },
+      { label: "Refund policy", href: "/refund" },
+      { label: "Accessibility", href: "/accessibility" },
+      { label: "Sitemap", href: "/sitemap" },
+    ],
+  },
+];
+
+const socialLinks = [
+  { label: "Facebook", href: "https://www.facebook.com/", icon: Facebook },
+  { label: "Instagram", href: "https://www.instagram.com/", icon: Instagram },
+  { label: "YouTube", href: "https://www.youtube.com/", icon: Youtube },
+  { label: "LinkedIn", href: "https://www.linkedin.com/", icon: Linkedin },
+];
 
 export default function Footer() {
+  const { language } = useLanguage();
+  const tamil = language === "ta";
   return (
-    <footer
-      className="text-gray-300"
-      style={{ background: "#0C0A09" }}
-      role="contentinfo"
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Top section */}
-        <div className="py-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-8">
-          {/* Brand */}
-          <div className="sm:col-span-2">
-            <div className="flex items-center gap-2.5 mb-4">
-              <div
-                className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-                style={{ background: "var(--primary)" }}
-                aria-hidden="true"
-              >
-                LS
-              </div>
-              <div>
-                <div className="font-bold text-base text-white">LabourSeva</div>
-                <div
-                  className="text-[10px] text-gray-400"
-                  style={{ fontFamily: "var(--font-sans-ta)" }}
-                >
+    <footer className="ls-footer">
+      <div className="ls-footer-main">
+        <div className="ls-footer-container">
+          <div className="ls-footer-grid">
+            {/* Brand */}
+            <div className="ls-footer-brand">
+              <Link href="/" className="ls-footer-logo" aria-label="LabourSeva home">
+                <span className="ls-footer-brand-name">
+                  Labour<span>Seva</span>
+                </span>
+                <span className="ls-footer-brand-accent" aria-hidden="true" />
+                <span className="ls-footer-tamil">
                   தொழிலாளர் நல சேவைகள்
-                </div>
+                </span>
+              </Link>
+
+              <p className="ls-footer-description">
+                {tamil ? "LabourSeva தொழிலாளர் நலத் தகவல்கள் மற்றும் டிஜிட்டல் சேவைகளை ஒருங்கிணைத்து, சேவைகளைக் கண்டறிந்து தகுதியைப் புரிந்துகொண்டு விண்ணப்பங்களைத் தொடர உதவுகிறது." : "LabourSeva brings labour welfare information and digital services together, helping workers discover services, understand eligibility and follow their applications."}
+              </p>
+
+              <div className="ls-footer-socials" aria-label="Social media">
+                {socialLinks.map(({ label, href, icon: Icon }) => (
+                  <a
+                    key={label}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={label}
+                    className="ls-social-link"
+                  >
+                    <Icon size={17} />
+                  </a>
+                ))}
               </div>
             </div>
-            <p className="text-sm text-gray-400 leading-relaxed mb-5 max-w-xs">
-              LabourSeva provides digital access to labour welfare services,
-              making it easier for workers in Tamil Nadu to access schemes,
-              register, apply and track applications securely.
-            </p>
 
-            {/* Contact */}
-            <div className="space-y-2 mb-5">
-              <a
-                href="tel:18004251234"
-                className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"
+            {/* Link groups */}
+            {footerGroups.map((group) => (
+              <nav
+                key={group.title}
+                className="ls-footer-column"
+                aria-label={group.title}
               >
-                <Phone size={14} className="flex-shrink-0" />
-                1800 425 1234
-                <span className="text-xs text-gray-600">(Toll-free, placeholder)</span>
-              </a>
-              <a
-                href="mailto:support@labourseva.com"
-                className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"
-              >
-                <Mail size={14} className="flex-shrink-0" />
-                support@labourseva.com
-              </a>
+                <h2>{group.title}</h2>
+                <ul>
+                  {group.links.map((link) => (
+                    <li key={link.href}>
+                      <Link href={link.href}>
+                        <span>{link.label}</span>
+                        <ArrowRight size={13} aria-hidden="true" />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            ))}
+          </div>
+
+          {/* Support information */}
+          <div className="ls-footer-contact">
+            <div className="ls-footer-contact-heading">
+              <ShieldCheck size={19} />
+              <span>{tamil ? "LabourSeva-வில் வழிகாட்டுதல் தேவையா?" : "Need help navigating LabourSeva?"}</span>
             </div>
 
-            {/* Social */}
-            <div className="flex items-center gap-3">
-              {[
-                { icon: Facebook, label: "Facebook", href: "#" },
-                { icon: Twitter, label: "Twitter / X", href: "#" },
-                { icon: Youtube, label: "YouTube", href: "#" },
-                { icon: Instagram, label: "Instagram", href: "#" },
-              ].map(({ icon: Icon, label, href }) => (
-                <a
-                  key={label}
-                  href={href}
-                  aria-label={label}
-                  className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-                >
-                  <Icon size={15} />
-                </a>
-              ))}
+            <div className="ls-footer-contact-items">
+              <Link href="/help" className="ls-footer-contact-link">
+                <Phone size={17} />
+                <span>{tamil ? "உதவி மையம்" : "Help centre"}</span>
+              </Link>
+
+              <Link href="/contact" className="ls-footer-contact-link">
+                <Mail size={17} />
+                <span>{tamil ? "ஆதரவைத் தொடர்பு கொள்ளுங்கள்" : "Contact support"}</span>
+              </Link>
             </div>
           </div>
 
-          {/* Link columns */}
-          <FooterColumn title="Quick Links" links={footerLinks.quickLinks} />
-          <FooterColumn title="Support" links={footerLinks.support} />
-          <FooterColumn title="About" links={footerLinks.about} />
-          <FooterColumn title="Policies" links={footerLinks.policies} />
-        </div>
-
-        {/* Bottom bar */}
-        <div
-          className="py-4 border-t flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-600"
-          style={{ borderColor: "#1C1917" }}
-        >
-          <p>
-            © {new Date().getFullYear()} LabourSeva. All rights reserved.
-          </p>
-          <p>
-            Contact details and service data shown are for demonstration purposes.
-          </p>
+          {/* Copyright */}
+          <div className="ls-footer-bottom">
+            <p>
+              © {new Date().getFullYear()} LabourSeva. All rights reserved.
+            </p>
+            <div className="ls-footer-legal">
+              <Link href="/privacy">{tamil ? "தனியுரிமை" : "Privacy"}</Link>
+              <span aria-hidden="true">·</span>
+              <Link href="/terms">{tamil ? "விதிமுறைகள்" : "Terms"}</Link>
+              <span aria-hidden="true">·</span>
+              <Link href="/accessibility">{tamil ? "அணுகல்தன்மை" : "Accessibility"}</Link>
+            </div>
+            <button
+              type="button"
+              className="ls-back-to-top"
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              aria-label="Back to top"
+            >
+              <ArrowUp size={19} />
+            </button>
+          </div>
         </div>
       </div>
     </footer>
-  );
-}
-
-function FooterColumn({
-  title,
-  links,
-}: {
-  title: string;
-  links: { label: string; href: string }[];
-}) {
-  return (
-    <div>
-      <h3 className="text-white font-semibold text-sm mb-3">{title}</h3>
-      <ul className="space-y-2">
-        {links.map((link) => (
-          <li key={link.href}>
-            <Link
-              href={link.href}
-              className="text-sm text-gray-400 hover:text-white transition-colors inline-flex items-center gap-1 group"
-            >
-              {link.label}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </div>
   );
 }

@@ -1,0 +1,29 @@
+{
+  "mcp": {
+    "hyper-canvas": {
+      "type": "remote",
+      "url": "http://127.0.0.1:51636/mcp?token=41e0125b16a228e6858ad16119b5f5df912bdcf31e7f8d31"
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest"
+      ]
+    },
+    "serena": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@anthropic/serena-mcp@latest"
+      ]
+    },
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp@latest"
+      ]
+    }
+  }
+}

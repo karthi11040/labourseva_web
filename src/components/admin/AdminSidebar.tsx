@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef, useMemo, type ComponentType } from "react";
+import { useLanguage } from "@/components/LanguageProvider";
 import {
   BarChart3,
   Bell,
@@ -41,6 +42,7 @@ import {
   Settings,
   ShieldAlert,
   ShoppingCart,
+  ShoppingBag,
   Store,
   UserCircle,
   UserCog,
@@ -76,76 +78,81 @@ export const DEFAULT_COUNTS: NavCountMap = {
 
 export interface PageSearchItem {
   name: string;
+  nameTa: string;
   url: string;
   icon: ComponentType<{ className?: string; style?: React.CSSProperties }>;
   section: string;
+  sectionTa: string;
   keys: string;
 }
 
 export const SB_PAGES: PageSearchItem[] = [
   // Main
-  { name: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard, section: "Main", keys: "home overview stats admin_dashboard.php" },
-  { name: "Analytics", url: "/admin/analytics", icon: BarChart3, section: "Main", keys: "reports charts graphs data insights admin_analytics.php" },
-  { name: "Manage Registration", url: "/admin/manage-registration", icon: PencilRuler, section: "Main", keys: "registration form settings manage_registration.php" },
-  { name: "Account Verifications", url: "/admin/verification", icon: ShieldAlert, section: "Main", keys: "kyc pending verify documents admin_verification.php" },
+  { name: "Dashboard", nameTa: "டாஷ்போர்டு", url: "/admin/dashboard", icon: LayoutDashboard, section: "Main", sectionTa: "முக்கிய பிரிவு", keys: "home overview stats admin_dashboard.php டாஷ்போர்டு" },
+  { name: "Analytics", nameTa: "பகுப்பாய்வு", url: "/admin/analytics", icon: BarChart3, section: "Main", sectionTa: "முக்கிய பிரிவு", keys: "reports charts graphs data insights admin_analytics.php பகுப்பாய்வு" },
+  { name: "Manage Registration", nameTa: "பதிவு மேலாண்மை", url: "/admin/manage-registration", icon: PencilRuler, section: "Main", sectionTa: "முக்கிய பிரிவு", keys: "registration form settings manage_registration.php பதிவு" },
+  { name: "Account Verifications", nameTa: "கணக்கு சரிபார்ப்புகள்", url: "/admin/verification", icon: ShieldAlert, section: "Main", sectionTa: "முக்கிய பிரிவு", keys: "kyc pending verify documents admin_verification.php சரிபார்ப்பு" },
 
   // Customer
-  { name: "Customers", url: "/admin/customers", icon: Users, section: "Customer", keys: "user member list admin_customers.php" },
-  { name: "Customer Requests", url: "/admin/customer-requests", icon: FileText, section: "Customer", keys: "service orders pending customer_request.php" },
+  { name: "Customers", nameTa: "வாடிக்கையாளர்கள்", url: "/admin/customers", icon: Users, section: "Customer", sectionTa: "வாடிக்கையாளர்", keys: "user member list admin_customers.php வாடிக்கையாளர்" },
+  { name: "Customer Requests", nameTa: "வாடிக்கையாளர் கோரிக்கைகள்", url: "/admin/customer-requests", icon: FileText, section: "Customer", sectionTa: "வாடிக்கையாளர்", keys: "service orders pending customer_request.php கோரிக்கைகள்" },
 
   // Retail
-  { name: "Retailers", url: "/admin/retail", icon: Store, section: "Retail", keys: "shop agent partner admin_retail_manager.php" },
-  { name: "Retail Requests", url: "/admin/retail-requests", icon: ShoppingCart, section: "Retail", keys: "orders pending retail service retail_request.php" },
+  { name: "Retailers", nameTa: "சில்லறை விற்பனையாளர்கள்", url: "/admin/retail", icon: Store, section: "Retail", sectionTa: "சில்லறை வணிகம்", keys: "shop agent partner admin_retail_manager.php சில்லறை" },
+  { name: "Retail Requests", nameTa: "சில்லறை கோரிக்கைகள்", url: "/admin/retail-requests", icon: ShoppingCart, section: "Retail", sectionTa: "சில்லறை வணிகம்", keys: "orders pending retail service retail_request.php கோரிக்கைகள்" },
+  { name: "Product Reviews", nameTa: "தயாரிப்பு மதிப்பாய்வு", url: "/admin/marketplace-products", icon: ShoppingBag, section: "Retail", sectionTa: "சில்லறை வணிகம்", keys: "marketplace products retailer review approve reject listing" },
+  { name: "Marketplace Plans", nameTa: "சந்தா திட்டங்கள்", url: "/admin/marketplace-subscriptions", icon: Wallet, section: "Retail", sectionTa: "சில்லறை வணிகம்", keys: "marketplace subscription plans billing price retailer" },
 
   // Distributor
-  { name: "Distributors", url: "/admin/distributors", icon: Network, section: "Distributor", keys: "dealer channel partner admin_distributors.php" },
-  { name: "Fee & Wallet Hub", url: "/admin/slide", icon: Wallet, section: "Distributor", keys: "fee wallet money balance credit slide.php" },
-  { name: "Distributor Requests", url: "/admin/distributor-requests", icon: Landmark, section: "Distributor", keys: "payout pending withdrawal admin_distributor_requests.php" },
+  { name: "Distributors", nameTa: "விநியோகஸ்தர்கள்", url: "/admin/distributors", icon: Network, section: "Distributor", sectionTa: "விநியோகஸ்தர்", keys: "dealer channel partner admin_distributors.php விநியோகஸ்தர்" },
+  { name: "Fee & Wallet Hub", nameTa: "கட்டணம் & வாலட் மையம்", url: "/admin/slide", icon: Wallet, section: "Distributor", sectionTa: "விநியோகஸ்தர்", keys: "fee wallet money balance credit slide.php வாலட்" },
+  { name: "Distributor Requests", nameTa: "விநியோகஸ்தர் கோரிக்கைகள்", url: "/admin/distributor-requests", icon: Landmark, section: "Distributor", sectionTa: "விநியோகஸ்தர்", keys: "payout pending withdrawal admin_distributor_requests.php கோரிக்கைகள்" },
 
   // Guest
-  { name: "Guest Users", url: "/admin/guest-users", icon: UserCircle, section: "Guest", keys: "unregistered visitor walk-in admin_guest_users.php" },
-  { name: "Guest Requests", url: "/admin/guest-requests", icon: UserPlus, section: "Guest", keys: "service orders walk-in guest_request.php" },
-  { name: "Guest Orders", url: "/admin/guest-orders", icon: ClipboardList, section: "Guest", keys: "purchase service receipt admin_guest_orders.php" },
+  { name: "Guest Users", nameTa: "விருந்தினர் பயனர்கள்", url: "/admin/guest-users", icon: UserCircle, section: "Guest", sectionTa: "விருந்தினர்", keys: "unregistered visitor walk-in admin_guest_users.php விருந்தினர்" },
+  { name: "Guest Requests", nameTa: "விருந்தினர் கோரிக்கைகள்", url: "/admin/guest-requests", icon: UserPlus, section: "Guest", sectionTa: "விருந்தினர்", keys: "service orders walk-in guest_request.php கோரிக்கை" },
+  { name: "Guest Orders", nameTa: "விருந்தினர் ஆர்டர்கள்", url: "/admin/guest-orders", icon: ClipboardList, section: "Guest", sectionTa: "விருந்தினர்", keys: "purchase service receipt admin_guest_orders.php ஆர்டர்கள்" },
 
   // Operations
-  { name: "Manage Services", url: "/admin/services", icon: Layers, section: "Operations", keys: "catalog service list add edit admin_services.php" },
-  { name: "Service Types", url: "/admin/service-types", icon: LayoutList, section: "Operations", keys: "category type group admin_service_types.php" },
-  { name: "Employees", url: "/admin/employees", icon: Users, section: "Operations", keys: "staff team member role admin_employees.php" },
-  { name: "Tickets", url: "/admin/tickets", icon: LifeBuoy, section: "Operations", keys: "helpdesk support ticket query grievance citizen" },
-  { name: "All Requests", url: "/admin/requests", icon: ClipboardList, section: "Operations", keys: "service orders all pending admin_requests.php" },
-  { name: "Districts", url: "/admin/districts", icon: Map, section: "Operations", keys: "location geo region admin_districts.php" },
-  { name: "Signatures", url: "/admin/signatures", icon: PenTool, section: "Operations", keys: "sign digital officer admin_signature.php" },
-  { name: "Manage Taluks", url: "/admin/taluks", icon: MapPin, section: "Operations", keys: "block sub-district location admin_taluks.php" },
-  { name: "Manage Panchayats", url: "/admin/panchayaths", icon: Home, section: "Operations", keys: "village gram local body admin_panchayaths.php" },
+  { name: "Manage Services", nameTa: "சேவைகள் மேலாண்மை", url: "/admin/services", icon: Layers, section: "Operations", sectionTa: "செயல்பாடுகள்", keys: "catalog service list add edit admin_services.php சேவைகள்" },
+  { name: "Service Types", nameTa: "சேவை வகைகள்", url: "/admin/service-types", icon: LayoutList, section: "Operations", sectionTa: "செயல்பாடுகள்", keys: "category type group admin_service_types.php வகைகள்" },
+  { name: "Employees", nameTa: "பணியாளர்கள்", url: "/admin/employees", icon: Users, section: "Operations", sectionTa: "செயல்பாடுகள்", keys: "staff team member role admin_employees.php பணியாளர்கள்" },
+  { name: "Tickets", nameTa: "ஆதரவு கோரிக்கைகள்", url: "/admin/tickets", icon: LifeBuoy, section: "Operations", sectionTa: "செயல்பாடுகள்", keys: "helpdesk support ticket query grievance citizen புகார்கள்" },
+  { name: "All Requests", nameTa: "அனைத்து கோரிக்கைகள்", url: "/admin/requests", icon: ClipboardList, section: "Operations", sectionTa: "செயல்பாடுகள்", keys: "service orders all pending admin_requests.php அனைத்து" },
+  { name: "Districts", nameTa: "மாவட்டங்கள் (Districts)", url: "/admin/districts", icon: Map, section: "Operations", sectionTa: "செயல்பாடுகள்", keys: "location geo region admin_districts.php மாவட்டங்கள்" },
+  { name: "Signatures", nameTa: "கையொப்பங்கள்", url: "/admin/signatures", icon: PenTool, section: "Operations", sectionTa: "செயல்பாடுகள்", keys: "sign digital officer admin_signature.php கையொப்பம்" },
+  { name: "Manage Taluks", nameTa: "வட்டங்கள் மேலாண்மை (Taluks)", url: "/admin/taluks", icon: MapPin, section: "Operations", sectionTa: "செயல்பாடுகள்", keys: "block sub-district location admin_taluks.php வட்டங்கள்" },
+  { name: "Manage Panchayats", nameTa: "ஊராட்சிகள் மேலாண்மை (Panchayats)", url: "/admin/panchayaths", icon: Home, section: "Operations", sectionTa: "செயல்பாடுகள்", keys: "village gram local body admin_panchayaths.php ஊராட்சிகள்" },
 
   // E-Service
-  { name: "E-Service List", url: "/admin/es-services", icon: FileCog, section: "E-Service", keys: "eservice items add manage es_service_list.php" },
-  { name: "Form Studio", url: "/admin/studio", icon: PenTool, section: "E-Service", keys: "form builder studio customize preview dynamic fields schema" },
-  { name: "E-Service Records", url: "/admin/es-records", icon: ClipboardCheck, section: "E-Service", keys: "eservice orders pending history es_service_records.php" },
+  { name: "E-Service List", nameTa: "இ-சேவைகள் பட்டியல்", url: "/admin/es-services", icon: FileCog, section: "E-Service", sectionTa: "இ-சேவை", keys: "eservice items add manage es_service_list.php இ-சேவை" },
+  { name: "Form Studio", nameTa: "படிவ அரங்கம்", url: "/admin/studio", icon: PenTool, section: "E-Service", sectionTa: "இ-சேவை", keys: "form builder studio customize preview dynamic fields schema வடிவம்" },
+  { name: "E-Service Records", nameTa: "இ-சேவை பதிவுகள்", url: "/admin/es-records", icon: ClipboardCheck, section: "E-Service", sectionTa: "இ-சேவை", keys: "eservice orders pending history es_service_records.php பதிவுகள்" },
 
   // Finance
-  { name: "Wallet & Payments", url: "/admin/finance", icon: Wallet, section: "Finance", keys: "balance money credit debit transaction admin_wallet.php admin_payments_wallet.php admin_cards_wallet.php" },
-  { name: "Commissions", url: "/admin/commissions", icon: Percent, section: "Finance", keys: "commission fee percentage split admin_commissions.php" },
-  { name: "Reports", url: "/admin/reports", icon: FileBarChart, section: "Finance", keys: "download export revenue summary admin_reports.php" },
-  { name: "Manual Transactions", url: "/admin/manual-txns", icon: PlusCircle, section: "Finance", keys: "add credit debit manual entry admin_manual_txns.php" },
-  { name: "Pending Requests", url: "/admin/pending-txns", icon: Clock, section: "Finance", keys: "pending hold approval transaction admin_pending_txns.php" },
+  { name: "Wallet & Payments", nameTa: "வாலட் & கட்டணங்கள்", url: "/admin/finance", icon: Wallet, section: "Finance", sectionTa: "நிதி & கணக்குகள்", keys: "balance money credit debit transaction admin_wallet.php வாலட்" },
+  { name: "Commissions", nameTa: "கமிஷன்கள்", url: "/admin/commissions", icon: Percent, section: "Finance", sectionTa: "நிதி & கணக்குகள்", keys: "commission fee percentage split admin_commissions.php கமிஷன்" },
+  { name: "Reports", nameTa: "அறிக்கைகள்", url: "/admin/reports", icon: FileBarChart, section: "Finance", sectionTa: "நிதி & கணக்குகள்", keys: "download export revenue summary admin_reports.php அறிக்கைகள்" },
+  { name: "Manual Transactions", nameTa: "கைமுறை பரிவர்த்தனைகள்", url: "/admin/manual-txns", icon: PlusCircle, section: "Finance", sectionTa: "நிதி & கணக்குகள்", keys: "add credit debit manual entry admin_manual_txns.php பரிவர்த்தனை" },
+  { name: "Pending Requests", nameTa: "நிலுவை கோரிக்கைகள்", url: "/admin/pending-txns", icon: Clock, section: "Finance", sectionTa: "நிதி & கணக்குகள்", keys: "pending hold approval transaction admin_pending_txns.php நிலுவை" },
 
   // System
-  { name: "System Users", url: "/admin/users", icon: UserCog, section: "System", keys: "admin superadmin login account admin_users.php" },
-  { name: "Announcements", url: "/admin/announcements", icon: Megaphone, section: "System", keys: "notice alert popup message broadcast admin_announcements.php" },
-  { name: "Notice Management", url: "/admin/notice", icon: Bell, section: "System", keys: "notice advisory circular official update admin_notice.php" },
-  { name: "Grievance Portal", url: "/admin/grievance", icon: ShieldAlert, section: "System", keys: "grievance complaint SLA resolution dispute audit admin_grievance.php" },
-  { name: "Ad Manager", url: "/admin/ads", icon: ImageIcon, section: "System", keys: "advertise ad banner promotion campaign tariff pricing admin_ads.php" },
-  { name: "Careers", url: "/admin/careers", icon: Briefcase, section: "System", keys: "job vacancy recruitment listing jd apply admin_careers.php" },
-  { name: "Schemes", url: "/admin/schemes", icon: LayoutTemplate, section: "System", keys: "scheme welfare government pension epf esic admin_schemes.php" },
-  { name: "Download Manager", url: "/admin/downloads", icon: DownloadCloud, section: "System", keys: "download forms notification act circular pdf admin_downloads.php" },
-  { name: "System Settings", url: "/admin/settings", icon: Settings, section: "System", keys: "config preferences site options admin_settings.php" },
-  { name: "Database Backup", url: "/admin/backup", icon: Database, section: "System", keys: "backup sql export restore data admin_backup.php" },
+  { name: "System Users", nameTa: "கணினி பயனர்கள்", url: "/admin/users", icon: UserCog, section: "System", sectionTa: "கணினி மேலாண்மை", keys: "admin superadmin login account admin_users.php பயனர்கள்" },
+  { name: "Announcements", nameTa: "அறிவிப்புகள்", url: "/admin/announcements", icon: Megaphone, section: "System", sectionTa: "கணினி மேலாண்மை", keys: "notice alert popup message broadcast admin_announcements.php அறிவிப்பு" },
+  { name: "Notice Management", nameTa: "சுற்றறிக்கைகள் மேலாண்மை", url: "/admin/notice", icon: Bell, section: "System", sectionTa: "கணினி மேலாண்மை", keys: "notice advisory circular official update admin_notice.php சுற்றறிக்கை" },
+  { name: "Grievance Portal", nameTa: "குறைதீர்ப்பு தளம்", url: "/admin/grievance", icon: ShieldAlert, section: "System", sectionTa: "கணினி மேலாண்மை", keys: "grievance complaint SLA resolution dispute audit admin_grievance.php குறைதீர்ப்பு" },
+  { name: "Ad Manager", nameTa: "விளம்பர மேலாண்மை", url: "/admin/ads", icon: ImageIcon, section: "System", sectionTa: "கணினி மேலாண்மை", keys: "advertise ad banner promotion campaign tariff pricing admin_ads.php விளம்பரம்" },
+  { name: "Careers", nameTa: "வேலைவாய்ப்புகள்", url: "/admin/careers", icon: Briefcase, section: "System", sectionTa: "கணினி மேலாண்மை", keys: "job vacancy recruitment listing jd apply admin_careers.php வேலைவாய்ப்பு" },
+  { name: "Schemes", nameTa: "நலத்திட்டங்கள்", url: "/admin/schemes", icon: LayoutTemplate, section: "System", sectionTa: "கணினி மேலாண்மை", keys: "scheme welfare government pension epf esic admin_schemes.php நலத்திட்டம்" },
+  { name: "Download Manager", nameTa: "பதிவிறக்கங்கள்", url: "/admin/downloads", icon: DownloadCloud, section: "System", sectionTa: "கணினி மேலாண்மை", keys: "download forms notification act circular pdf admin_downloads.php பதிவிறக்கம்" },
+  { name: "System Settings", nameTa: "கணினி அமைப்புகள்", url: "/admin/settings", icon: Settings, section: "System", sectionTa: "கணினி மேலாண்மை", keys: "config preferences site options admin_settings.php அமைப்புகள்" },
+  { name: "Database Backup", nameTa: "தரவுத்தள காப்புப்பிரதி", url: "/admin/backup", icon: Database, section: "System", sectionTa: "கணினி மேலாண்மை", keys: "backup sql export restore data admin_backup.php காப்புப்பிரதி" },
 
   // Operations Approval queue
-  { name: "Approval Decisions", url: "/admin/applications", icon: ClipboardCheck, section: "Operations", keys: "applications approval decisions queue" },
-  { name: "Audit Trail", url: "/admin/audit", icon: ShieldAlert, section: "System", keys: "audit logs security trail" },
+  { name: "Approval Decisions", nameTa: "ஒப்புதல் முடிவுகள்", url: "/admin/applications", icon: ClipboardCheck, section: "Operations", sectionTa: "செயல்பாடுகள்", keys: "applications approval decisions queue முடிவுகள்" },
+  { name: "Audit Trail", nameTa: "தணிக்கை பதிவு", url: "/admin/audit", icon: ShieldAlert, section: "System", sectionTa: "கணினி மேலாண்மை", keys: "audit logs security trail தணிக்கை" },
 ];
+
 
 export default function AdminSidebar({
   counts = DEFAULT_COUNTS,
@@ -158,6 +165,8 @@ export default function AdminSidebar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { language } = useLanguage();
+  const isTa = language === "ta";
 
   // Active check helper
   const isPathActive = (hrefs: string[]) => {
@@ -203,7 +212,7 @@ export default function AdminSidebar({
     if (!q) return [];
     const words = q.split(/\s+/);
     return SB_PAGES.filter((page) => {
-      const haystack = `${page.name} ${page.section} ${page.keys} ${page.url}`.toLowerCase();
+      const haystack = `${page.name} ${page.nameTa} ${page.section} ${page.sectionTa} ${page.keys} ${page.url}`.toLowerCase();
       return words.every((w) => haystack.includes(w));
     });
   }, [searchQuery]);
@@ -212,8 +221,10 @@ export default function AdminSidebar({
   const groupedResults = useMemo(() => {
     const groups: Record<string, PageSearchItem[]> = {};
     filteredPages.forEach((p) => {
-      if (!groups[p.section]) groups[p.section] = [];
-      groups[p.section].push(p);
+      const sec = isTa ? p.sectionTa : p.section;
+      if (!groups[sec]) groups[sec] = [];
+      groups[sec].push(p);
+
     });
     return groups;
   }, [filteredPages]);
@@ -550,17 +561,17 @@ export default function AdminSidebar({
               }}
               onKeyDown={handleSearchKeyDown}
               className="sb-search-input"
-              placeholder="Search pages… (Ctrl+K)"
+              placeholder={isTa ? "பக்கங்களைத் தேடுக… (Ctrl+K)" : "Search pages… (Ctrl+K)"}
               autoComplete="off"
               spellCheck="false"
-              aria-label="Search admin pages"
+              aria-label={isTa ? "நிர்வாக பக்கங்களைத் தேடுக" : "Search admin pages"}
               aria-autocomplete="list"
             />
             {searchQuery && (
               <button
                 className="sb-search-clear"
                 onClick={clearSearch}
-                title="Clear search"
+                title={isTa ? "தேடலை நீக்குக" : "Clear search"}
                 type="button"
               >
                 ✕
@@ -569,10 +580,10 @@ export default function AdminSidebar({
 
             {/* Live Search Dropdown */}
             {dropdownOpen && searchQuery.trim().length > 0 && (
-              <div className="sb-dropdown open" role="listbox" aria-label="Search results">
+              <div className="sb-dropdown open" role="listbox" aria-label={isTa ? "தேடல் முடிவுகள்" : "Search results"}>
                 {filteredPages.length === 0 ? (
                   <div className="sb-no-results">
-                    No pages found for &ldquo;<strong>{searchQuery}</strong>&rdquo;
+                    {isTa ? "பொருத்தமான பக்கங்கள் எதுவும் இல்லை" : "No pages found for"} &ldquo;<strong>{searchQuery}</strong>&rdquo;
                   </div>
                 ) : (
                   Object.entries(groupedResults).map(([section, pages]) => (
@@ -582,6 +593,8 @@ export default function AdminSidebar({
                         const globalIdx = filteredPages.indexOf(p);
                         const isFocused = globalIdx === focusedIndex;
                         const Icon = p.icon;
+                        const pageLabel = isTa ? p.nameTa : p.name;
+                        const secLabel = isTa ? p.sectionTa : p.section;
                         return (
                           <Link
                             key={p.url}
@@ -599,8 +612,8 @@ export default function AdminSidebar({
                               <Icon className="w-3.5 h-3.5" />
                             </span>
                             <span>
-                              <span className="sb-result-name">{renderHighlighted(p.name, searchQuery.trim())}</span>
-                              <span className="sb-result-section">{p.section}</span>
+                              <span className="sb-result-name">{renderHighlighted(pageLabel, searchQuery.trim())}</span>
+                              <span className="sb-result-section">{secLabel}</span>
                             </span>
                           </Link>
                         );
@@ -610,34 +623,35 @@ export default function AdminSidebar({
                 )}
               </div>
             )}
+
           </div>
         </div>
 
         {/* Scrollable Navigation */}
         <nav className="flex-1 overflow-y-auto py-3 px-3 sidebar-scrollable">
           {/* Main */}
-          <p className="sidebar-section-label">Main</p>
+          <p className="sidebar-section-label">{isTa ? "முக்கிய பிரிவு" : "Main"}</p>
           <Link
             href="/admin/dashboard"
             onClick={onClose}
             ref={isPathActive(["/admin/dashboard"]) ? activeLinkRef : undefined}
             className={`sidebar-link ${isPathActive(["/admin/dashboard"]) ? "active" : ""}`}
           >
-            <LayoutDashboard className="nav-icon" /> Dashboard
+            <LayoutDashboard className="nav-icon" /> {isTa ? "டாஷ்போர்டு" : "Dashboard"}
           </Link>
           <Link
             href="/admin/analytics"
             onClick={onClose}
             className={`sidebar-link ${isPathActive(["/admin/analytics"]) ? "active" : ""}`}
           >
-            <BarChart3 className="nav-icon" /> Analytics
+            <BarChart3 className="nav-icon" /> {isTa ? "பகுப்பாய்வு" : "Analytics"}
           </Link>
           <Link
             href="/admin/manage-registration"
             onClick={onClose}
             className={`sidebar-link ${isPathActive(["/admin/manage-registration"]) ? "active" : ""}`}
           >
-            <PencilRuler className="nav-icon" /> Manage Registration
+            <PencilRuler className="nav-icon" /> {isTa ? "பதிவு மேலாண்மை" : "Manage Registration"}
           </Link>
           <Link
             href="/admin/verification"
@@ -645,20 +659,20 @@ export default function AdminSidebar({
             className={`sidebar-link ${isPathActive(["/admin/verification"]) ? "active" : ""}`}
           >
             <ShieldAlert className="nav-icon" />
-            <span className="flex-1">Account Verifications</span>
+            <span className="flex-1">{isTa ? "கணக்கு சரிபார்ப்புகள்" : "Account Verifications"}</span>
             {counts.unverified_accounts > 0 && (
               <span className="nav-badge">{counts.unverified_accounts}</span>
             )}
           </Link>
 
           {/* Customer */}
-          <p className="sidebar-section-label mt-3">Customer</p>
+          <p className="sidebar-section-label mt-3">{isTa ? "வாடிக்கையாளர்" : "Customer"}</p>
           <Link
             href="/admin/customers"
             onClick={onClose}
             className={`sidebar-link ${isPathActive(["/admin/customers"]) ? "active" : ""}`}
           >
-            <Users className="nav-icon" /> Customers
+            <Users className="nav-icon" /> {isTa ? "வாடிக்கையாளர்கள்" : "Customers"}
           </Link>
           <Link
             href="/admin/customer-requests"
@@ -666,18 +680,18 @@ export default function AdminSidebar({
             className={`sidebar-link ${isPathActive(["/admin/customer-requests"]) ? "active" : ""}`}
           >
             <FileText className="nav-icon" />
-            <span className="flex-1">Customer Requests</span>
+            <span className="flex-1">{isTa ? "வாடிக்கையாளர் கோரிக்கைகள்" : "Customer Requests"}</span>
             {counts.customer > 0 && <span className="nav-badge">{counts.customer}</span>}
           </Link>
 
           {/* Retail */}
-          <p className="sidebar-section-label mt-3">Retail</p>
+          <p className="sidebar-section-label mt-3">{isTa ? "சில்லறை வணிகம்" : "Retail"}</p>
           <Link
             href="/admin/retail"
             onClick={onClose}
             className={`sidebar-link ${isPathActive(["/admin/retail"]) ? "active" : ""}`}
           >
-            <Store className="nav-icon" /> Retailers
+            <Store className="nav-icon" /> {isTa ? "சில்லறை விற்பனையாளர்கள்" : "Retailers"}
           </Link>
           <Link
             href="/admin/retail-requests"
@@ -685,25 +699,39 @@ export default function AdminSidebar({
             className={`sidebar-link ${isPathActive(["/admin/retail-requests"]) ? "active" : ""}`}
           >
             <ShoppingCart className="nav-icon" />
-            <span className="flex-1">Retail Requests</span>
+            <span className="flex-1">{isTa ? "சில்லறை கோரிக்கைகள்" : "Retail Requests"}</span>
             {counts.retail > 0 && <span className="nav-badge">{counts.retail}</span>}
+          </Link>
+          <Link
+            href="/admin/marketplace-products"
+            onClick={onClose}
+            className={`sidebar-link ${isPathActive(["/admin/marketplace-products"]) ? "active" : ""}`}
+          >
+            <ShoppingBag className="nav-icon" /> {isTa ? "சந்தைப் பொருட்கள்" : "Marketplace Products"}
+          </Link>
+          <Link
+            href="/admin/marketplace-subscriptions"
+            onClick={onClose}
+            className={`sidebar-link ${isPathActive(["/admin/marketplace-subscriptions"]) ? "active" : ""}`}
+          >
+            <Wallet className="nav-icon" /> {isTa ? "சந்தா திட்டங்கள்" : "Marketplace Plans"}
           </Link>
 
           {/* Distributor */}
-          <p className="sidebar-section-label mt-3">Distributor</p>
+          <p className="sidebar-section-label mt-3">{isTa ? "விநியோகஸ்தர்" : "Distributor"}</p>
           <Link
             href="/admin/distributors"
             onClick={onClose}
             className={`sidebar-link ${isPathActive(["/admin/distributors"]) ? "active" : ""}`}
           >
-            <Network className="nav-icon" /> Distributors
+            <Network className="nav-icon" /> {isTa ? "விநியோகஸ்தர்கள்" : "Distributors"}
           </Link>
           <Link
             href="/admin/slide"
             onClick={onClose}
             className={`sidebar-link ${isPathActive(["/admin/slide"]) ? "active" : ""}`}
           >
-            <Wallet className="nav-icon" /> Fee &amp; Wallet Hub
+            <Wallet className="nav-icon" /> {isTa ? "கட்டணம் & வாலட் மையம்" : "Fee & Wallet Hub"}
           </Link>
           <Link
             href="/admin/distributor-requests"
@@ -711,18 +739,18 @@ export default function AdminSidebar({
             className={`sidebar-link ${isPathActive(["/admin/distributor-requests"]) ? "active" : ""}`}
           >
             <Landmark className="nav-icon" />
-            <span className="flex-1">Distributor Requests</span>
+            <span className="flex-1">{isTa ? "விநியோகஸ்தர் கோரிக்கைகள்" : "Distributor Requests"}</span>
             {counts.distributor > 0 && <span className="nav-badge">{counts.distributor}</span>}
           </Link>
 
           {/* Guest */}
-          <p className="sidebar-section-label mt-3">Guest</p>
+          <p className="sidebar-section-label mt-3">{isTa ? "விருந்தினர்" : "Guest"}</p>
           <Link
             href="/admin/guest-users"
             onClick={onClose}
             className={`sidebar-link ${isPathActive(["/admin/guest-users"]) ? "active" : ""}`}
           >
-            <UserCircle className="nav-icon" /> Guest Users
+            <UserCircle className="nav-icon" /> {isTa ? "விருந்தினர் பயனர்கள்" : "Guest Users"}
           </Link>
           <Link
             href="/admin/guest-requests"
@@ -730,7 +758,7 @@ export default function AdminSidebar({
             className={`sidebar-link ${isPathActive(["/admin/guest-requests"]) ? "active" : ""}`}
           >
             <UserPlus className="nav-icon" />
-            <span className="flex-1">Guest Requests</span>
+            <span className="flex-1">{isTa ? "விருந்தினர் கோரிக்கைகள்" : "Guest Requests"}</span>
             {counts.guest > 0 && <span className="nav-badge">{counts.guest}</span>}
           </Link>
           <Link
@@ -738,31 +766,31 @@ export default function AdminSidebar({
             onClick={onClose}
             className={`sidebar-link ${isPathActive(["/admin/guest-orders"]) ? "active" : ""}`}
           >
-            <ClipboardList className="nav-icon" /> Guest Orders
+            <ClipboardList className="nav-icon" /> {isTa ? "விருந்தினர் ஆர்டர்கள்" : "Guest Orders"}
           </Link>
 
           {/* Operations */}
-          <p className="sidebar-section-label mt-3">Operations</p>
+          <p className="sidebar-section-label mt-3">{isTa ? "செயல்பாடுகள்" : "Operations"}</p>
           <Link
             href="/admin/services"
             onClick={onClose}
             className={`sidebar-link ${isPathActive(["/admin/services"]) ? "active" : ""}`}
           >
-            <Layers className="nav-icon" /> Manage Services
+            <Layers className="nav-icon" /> {isTa ? "சேவைகள் மேலாண்மை" : "Manage Services"}
           </Link>
           <Link
             href="/admin/service-types"
             onClick={onClose}
             className={`sidebar-link ${isPathActive(["/admin/service-types"]) ? "active" : ""}`}
           >
-            <LayoutList className="nav-icon" /> Service Types
+            <LayoutList className="nav-icon" /> {isTa ? "சேவை வகைகள்" : "Service Types"}
           </Link>
           <Link
             href="/admin/employees"
             onClick={onClose}
             className={`sidebar-link ${isPathActive(["/admin/employees"]) ? "active" : ""}`}
           >
-            <Users className="nav-icon" /> Employees
+            <Users className="nav-icon" /> {isTa ? "பணியாளர்கள்" : "Employees"}
           </Link>
           <Link
             href="/admin/tickets"
@@ -770,7 +798,7 @@ export default function AdminSidebar({
             className={`sidebar-link ${isPathActive(["/admin/tickets"]) ? "active" : ""}`}
           >
             <LifeBuoy className="nav-icon" />
-            <span className="flex-1">Tickets</span>
+            <span className="flex-1">{isTa ? "ஆதரவு கோரிக்கைகள்" : "Tickets"}</span>
             {counts.open_tickets > 0 && <span className="nav-badge">{counts.open_tickets}</span>}
           </Link>
           <Link
@@ -779,26 +807,52 @@ export default function AdminSidebar({
             className={`sidebar-link ${isPathActive(["/admin/requests"]) ? "active" : ""}`}
           >
             <ClipboardList className="nav-icon" />
-            <span className="flex-1">All Requests</span>
+            <span className="flex-1">{isTa ? "அனைத்து கோரிக்கைகள்" : "All Requests"}</span>
             {counts.all > 0 && <span className="nav-badge">{counts.all}</span>}
           </Link>
           <Link
             href="/admin/geography"
             onClick={onClose}
-            className={`sidebar-link ${isPathActive(["/admin/geography"]) ? "active" : ""}`}
+            className={`sidebar-link ${isPathActive(["/admin/geography", "/admin/districts", "/admin/taluks", "/admin/panchayaths"]) ? "active" : ""}`}
           >
-            <Map className="nav-icon" /> Geography Management
+            <Map className="nav-icon" /> {isTa ? "புவியியல் மேலாண்மை" : "Geography Management"}
           </Link>
+          <div className="ml-4 space-y-0.5 border-l-2 border-slate-200 pl-2">
+            <Link
+              href="/admin/districts"
+              onClick={onClose}
+              className={`sidebar-link text-xs ${isPathActive(["/admin/districts"]) ? "active" : ""}`}
+            >
+              <MapPin className="nav-icon w-3.5 h-3.5" />
+              <span>{isTa ? "மாவட்டங்கள் (Districts)" : "Districts / மாவட்டங்கள்"}</span>
+            </Link>
+            <Link
+              href="/admin/taluks"
+              onClick={onClose}
+              className={`sidebar-link text-xs ${isPathActive(["/admin/taluks"]) ? "active" : ""}`}
+            >
+              <MapPin className="nav-icon w-3.5 h-3.5" />
+              <span>{isTa ? "வட்டங்கள் (Taluks)" : "Taluks / வட்டங்கள்"}</span>
+            </Link>
+            <Link
+              href="/admin/panchayaths"
+              onClick={onClose}
+              className={`sidebar-link text-xs ${isPathActive(["/admin/panchayaths"]) ? "active" : ""}`}
+            >
+              <Home className="nav-icon w-3.5 h-3.5" />
+              <span>{isTa ? "ஊராட்சிகள் (Panchayats)" : "Panchayats / ஊராட்சிகள்"}</span>
+            </Link>
+          </div>
           <Link
             href="/admin/signatures"
             onClick={onClose}
             className={`sidebar-link ${isPathActive(["/admin/signatures"]) ? "active" : ""}`}
           >
-            <PenTool className="nav-icon" /> Signatures
+            <PenTool className="nav-icon" /> {isTa ? "கையொப்பங்கள்" : "Signatures"}
           </Link>
 
           {/* E-Service Section */}
-          <p className="sidebar-section-label mt-3">E-Service</p>
+          <p className="sidebar-section-label mt-3">{isTa ? "இ-சேவை" : "E-Service"}</p>
           <button
             type="button"
             onClick={() => setEsOpen((prev) => !prev)}
@@ -806,7 +860,7 @@ export default function AdminSidebar({
             aria-expanded={esOpen}
           >
             <Layers className="nav-icon" />
-            <span className="flex-1">E-Service</span>
+            <span className="flex-1">{isTa ? "இ-சேவை அரங்கம்" : "E-Service"}</span>
             {counts.es_pending > 0 && <span className="nav-badge mr-1">{counts.es_pending}</span>}
             <ChevronDown
               className={`w-4 h-4 transition-transform duration-200 ${esOpen ? "rotate-180" : ""}`}
@@ -822,7 +876,7 @@ export default function AdminSidebar({
               onClick={onClose}
               className={`sidebar-link ${isPathActive(["/admin/es-services"]) ? "active" : ""}`}
             >
-              <FileCog className="nav-icon" /> E-Service List
+              <FileCog className="nav-icon" /> {isTa ? "இ-சேவைகள் பட்டியல்" : "E-Service List"}
             </Link>
             <Link
               href="/admin/studio"
@@ -830,7 +884,7 @@ export default function AdminSidebar({
               className={`sidebar-link ${isPathActive(["/admin/studio"]) ? "active" : ""}`}
             >
               <PenTool className="nav-icon text-amber-500" />
-              <span className="flex-1">Form Studio</span>
+              <span className="flex-1">{isTa ? "படிவ அரங்கம்" : "Form Studio"}</span>
               <span className="rounded-md bg-amber-500/10 text-amber-600 px-1.5 py-0.2 text-[9px] font-bold">New</span>
             </Link>
             <Link
@@ -839,47 +893,47 @@ export default function AdminSidebar({
               className={`sidebar-link ${isPathActive(["/admin/es-records"]) ? "active" : ""}`}
             >
               <ClipboardCheck className="nav-icon" />
-              <span className="flex-1">E-Service Records</span>
+              <span className="flex-1">{isTa ? "இ-சேவை பதிவுகள்" : "E-Service Records"}</span>
               {counts.es_pending > 0 && <span className="nav-badge">{counts.es_pending}</span>}
             </Link>
           </div>
 
           {/* Finance */}
-          <p className="sidebar-section-label mt-3">Finance</p>
+          <p className="sidebar-section-label mt-3">{isTa ? "நிதி & கணக்குகள்" : "Finance"}</p>
           <Link
             href="/admin/finance"
             onClick={onClose}
             className={`sidebar-link ${isPathActive(["/admin/finance", "/admin/wallet"]) ? "active" : ""}`}
           >
-            <Wallet className="nav-icon" /> Wallet &amp; Payments
+            <Wallet className="nav-icon" /> {isTa ? "வாலட் & கட்டணங்கள்" : "Wallet & Payments"}
           </Link>
           <Link
             href="/admin/razerpay"
             onClick={onClose}
             className={`sidebar-link ${isPathActive(["/admin/razerpay"]) ? "active" : ""}`}
           >
-            <ShieldAlert className="nav-icon" /> Razer Pay Controls
+            <ShieldAlert className="nav-icon" /> {isTa ? "ரேஸர்பே அமைப்புகள்" : "Razer Pay Controls"}
           </Link>
           <Link
             href="/admin/commissions"
             onClick={onClose}
             className={`sidebar-link ${isPathActive(["/admin/commissions"]) ? "active" : ""}`}
           >
-            <Percent className="nav-icon" /> Commissions
+            <Percent className="nav-icon" /> {isTa ? "கமிஷன்கள்" : "Commissions"}
           </Link>
           <Link
             href="/admin/reports"
             onClick={onClose}
             className={`sidebar-link ${isPathActive(["/admin/reports"]) ? "active" : ""}`}
           >
-            <FileBarChart className="nav-icon" /> Reports
+            <FileBarChart className="nav-icon" /> {isTa ? "அறிக்கைகள்" : "Reports"}
           </Link>
           <Link
             href="/admin/manual-txns"
             onClick={onClose}
             className={`sidebar-link ${isPathActive(["/admin/manual-txns"]) ? "active" : ""}`}
           >
-            <PlusCircle className="nav-icon" /> Manual Transactions
+            <PlusCircle className="nav-icon" /> {isTa ? "கைமுறை பரிவர்த்தனைகள்" : "Manual Transactions"}
           </Link>
           <Link
             href="/admin/pending-txns"
@@ -887,81 +941,81 @@ export default function AdminSidebar({
             className={`sidebar-link ${isPathActive(["/admin/pending-txns"]) ? "active" : ""}`}
           >
             <Clock className="nav-icon" />
-            <span className="flex-1">Pending Requests</span>
+            <span className="flex-1">{isTa ? "நிலுவை கோரிக்கைகள்" : "Pending Requests"}</span>
             {counts.pending_txns > 0 && <span className="nav-badge">{counts.pending_txns}</span>}
           </Link>
 
           {/* System */}
-          <p className="sidebar-section-label mt-3">System</p>
+          <p className="sidebar-section-label mt-3">{isTa ? "கணினி மேலாண்மை" : "System"}</p>
           <Link
             href="/admin/users"
             onClick={onClose}
             className={`sidebar-link ${isPathActive(["/admin/users"]) ? "active" : ""}`}
           >
-            <UserCog className="nav-icon" /> System Users
+            <UserCog className="nav-icon" /> {isTa ? "கணினி பயனர்கள்" : "System Users"}
           </Link>
           <Link
             href="/admin/announcements"
             onClick={onClose}
             className={`sidebar-link ${isPathActive(["/admin/announcements"]) ? "active" : ""}`}
           >
-            <Megaphone className="nav-icon" /> Announcements
+            <Megaphone className="nav-icon" /> {isTa ? "அறிவிப்புகள்" : "Announcements"}
           </Link>
           <Link
             href="/admin/notice"
             onClick={onClose}
             className={`sidebar-link ${isPathActive(["/admin/notice"]) ? "active" : ""}`}
           >
-            <Bell className="nav-icon" /> Notice Management
+            <Bell className="nav-icon" /> {isTa ? "சுற்றறிக்கைகள் மேலாண்மை" : "Notice Management"}
           </Link>
           <Link
             href="/admin/grievance"
             onClick={onClose}
             className={`sidebar-link ${isPathActive(["/admin/grievance"]) ? "active" : ""}`}
           >
-            <ShieldAlert className="nav-icon" /> Grievance Portal
+            <ShieldAlert className="nav-icon" /> {isTa ? "குறைதீர்ப்பு தளம்" : "Grievance Portal"}
           </Link>
           <Link
             href="/admin/ads"
             onClick={onClose}
             className={`sidebar-link ${isPathActive(["/admin/ads"]) ? "active" : ""}`}
           >
-            <ImageIcon className="nav-icon" /> Ad Manager
+            <ImageIcon className="nav-icon" /> {isTa ? "விளம்பர மேலாண்மை" : "Ad Manager"}
           </Link>
           <Link
             href="/admin/careers"
             onClick={onClose}
             className={`sidebar-link ${isPathActive(["/admin/careers"]) ? "active" : ""}`}
           >
-            <Briefcase className="nav-icon" /> Careers
+            <Briefcase className="nav-icon" /> {isTa ? "வேலைவாய்ப்புகள்" : "Careers"}
           </Link>
           <Link
             href="/admin/schemes"
             onClick={onClose}
             className={`sidebar-link ${isPathActive(["/admin/schemes"]) ? "active" : ""}`}
           >
-            <LayoutTemplate className="nav-icon" /> Schemes
+            <LayoutTemplate className="nav-icon" /> {isTa ? "நலத்திட்டங்கள்" : "Schemes"}
           </Link>
           <Link
             href="/admin/downloads"
             onClick={onClose}
             className={`sidebar-link ${isPathActive(["/admin/downloads"]) ? "active" : ""}`}
           >
-            <DownloadCloud className="nav-icon" /> Download Manager
+            <DownloadCloud className="nav-icon" /> {isTa ? "பதிவிறக்கங்கள்" : "Download Manager"}
           </Link>
           <Link
             href="/admin/settings"
             onClick={onClose}
             className={`sidebar-link ${isPathActive(["/admin/settings"]) ? "active" : ""}`}
           >
-            <Settings className="nav-icon" /> System Settings
+            <Settings className="nav-icon" /> {isTa ? "கணினி அமைப்புகள்" : "System Settings"}
           </Link>
           <Link
             href="/admin/backup"
             onClick={onClose}
             className={`sidebar-link ${isPathActive(["/admin/backup"]) ? "active" : ""}`}
           >
-            <Database className="nav-icon" /> Database Backup
+            <Database className="nav-icon" /> {isTa ? "தரவுத்தள காப்புப்பிரதி" : "Database Backup"}
           </Link>
         </nav>
 
@@ -972,13 +1026,15 @@ export default function AdminSidebar({
               A
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-slate-800 truncate">Admin User</p>
+              <p className="text-sm font-semibold text-slate-800 truncate">
+                {isTa ? "நிர்வாக பயனர்" : "Admin User"}
+              </p>
               <p className="text-xs text-slate-400 truncate">admin@labourseva.tn.gov.in</p>
             </div>
             <button
               onClick={handleLogout}
               className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors flex-shrink-0"
-              title="Logout"
+              title={isTa ? "வெளியேறு" : "Logout"}
               type="button"
             >
               <LogOut className="w-4 h-4" />
@@ -989,3 +1045,4 @@ export default function AdminSidebar({
     </>
   );
 }
+

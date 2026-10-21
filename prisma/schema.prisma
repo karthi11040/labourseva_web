@@ -1,0 +1,1948 @@
+// =====================================================================
+// LabourSeva: complete database schema (MySQL, Prisma)
+// Conventions
+//  - Money is stored as BigInt PAISE (1 rupee = 100 paise). Never floats.
+//  - *Enc columns hold AES-256-GCM ciphertext ("v<keyVersion>:<iv>:<tag>:<data>").
+//  - *Hash columns hold HMAC-SHA256 blind indexes (hex, 64 chars) for lookups.
+//  - Audit-style "...ById" columns on low-risk tables are plain indexed
+//    CHAR(36) with NO foreign key on purpose, so history survives user closure.
+//  - audit_logs must be INSERT/SELECT only for the app DB user (see notes).
+// =====================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Prisma 7+: the connection URL lives in prisma.config.ts, not here.
+// Prisma 6 or older: add   url = env("DATABASE_URL")   inside this block.
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------
+// ENUMS
+// ---------------------------------------------------------------------
+
+enum Role {
+  CUSTOMER
+  RETAILER
+  DISTRIBUTOR
+  AGENT
+  EMPLOYEE
+  ADMIN
+}
+
+enum Portal {
+  CUSTOMER
+  GUEST
+  RETAILER
+  DISTRIBUTOR
+  AGENT
+  EMPLOYEE
+  ADMIN
+}
+
+enum UserStatus {
+  PENDING_VERIFICATION
+  PENDING_KYC
+  PENDING_APPROVAL
+  ACTIVE
+  SUSPENDED
+  FLAGGED
+  CLOSED
+}
+
+enum KycStatus {
+  NOT_SUBMITTED
+  SUBMITTED
+  IN_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum Language {
+  EN
+  TA
+}
+
+enum ThemePref {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+enum OtpPurpose {
+  LOGIN
+  REGISTER
+  RECOVERY
+  GUEST_CHECKOUT
+  GUEST_TRACK
+  STEP_UP
+}
+
+enum ApplicantType {
+  CUSTOMER
+  GUEST
+  ASSISTED_RETAILER
+  ASSISTED_AGENT
+}
+
+enum ApplicationStatus {
+  DRAFT
+  PENDING_PAYMENT
+  PAID_PENDING_VERIFICATION
+  IN_REVIEW
+  RETURNED
+  APPROVED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+enum ReviewDecision {
+  PENDING
+  APPROVED
+  RETURNED
+  REJECTED
+}
+
+enum PaymentMode {
+  GATEWAY
+  WALLET
+}
+
+enum PaymentProvider {
+  RAZORPAY
+  PAYU
+}
+
+enum PaymentPurpose {
+  APPLICATION_FEE
+  WALLET_TOPUP
+  REGISTRATION_FEE
+}
+
+enum PaymentStatus {
+  CREATED
+  PENDING
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum RefundStatus {
+  REQUESTED
+  APPROVED
+  PROCESSED
+  FAILED
+}
+
+enum WalletStatus {
+  ACTIVE
+  FROZEN
+}
+
+enum LedgerDirection {
+  CREDIT
+  DEBIT
+}
+
+enum LedgerRefType {
+  PAYMENT_TOPUP
+  APPLICATION_FEE
+  COMMISSION
+  REFERRAL_REWARD
+  REFUND
+  TRANSFER_IN
+  TRANSFER_OUT
+  ADJUSTMENT
+  PAYOUT_HOLD
+  PAYOUT_RELEASE
+}
+
+enum TransferStatus {
+  PENDING
+  COMPLETED
+  REJECTED
+  FAILED
+}
+
+enum AdjustmentStatus {
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  APPLIED
+}
+
+enum CommissionStatus {
+  ACCRUED
+  CREDITED
+  REVERSED
+}
+
+enum ReferralStatus {
+  PENDING
+  QUALIFIED
+  REWARDED
+  REJECTED
+}
+
+enum DocumentKind {
+  IDENTITY
+  APPLICATION_UPLOAD
+  KYC
+  CERTIFICATE_OUTPUT
+  RECEIPT
+  TICKET_ATTACHMENT
+  PARTNER_AGREEMENT
+  PROFILE_PHOTO
+}
+
+enum DocumentStatus {
+  ACTIVE
+  DELETED
+  PURGED
+}
+
+enum ScanStatus {
+  PENDING
+  CLEAN
+  INFECTED
+  ERROR
+  SKIPPED
+}
+
+enum TokenPurpose {
+  VIEW
+  DOWNLOAD
+}
+
+enum TicketType {
+  FEEDBACK
+  GRIEVANCE
+  CONTACT
+  HELPDESK
+  ADVERTISE
+  CAREERS
+  PARTNER
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_ON_CITIZEN
+  ESCALATED
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum MessageAuthorType {
+  CITIZEN
+  STAFF
+  SYSTEM
+}
+
+enum Channel {
+  SMS
+  EMAIL
+  INAPP
+  WEB
+}
+
+enum IamAction {
+  ACTIVATE
+  SUSPEND
+  REACTIVATE
+  FLAG
+  REVOKE_SESSIONS
+  GRANT_ACCESS
+  RESET_CREDENTIALS
+  CLOSE_ACCOUNT
+}
+
+enum IamStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXECUTED
+}
+
+enum AnomalyStatus {
+  OPEN
+  REVIEWING
+  DISMISSED
+  ESCALATED
+}
+
+enum NotificationStatus {
+  QUEUED
+  SENDING
+  SENT
+  DELIVERED
+  FAILED
+}
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  DONE
+  FAILED
+  DEAD
+}
+
+enum AnnouncementKind {
+  POPUP
+  NOTICE
+  SLIDER
+  AD_BANNER
+  SCHEME
+  TICKER
+}
+
+enum PayoutMethodType {
+  UPI
+  BANK
+}
+
+enum PayoutStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+  CANCELLED
+}
+
+enum PartnerCallStatus {
+  INITIATED
+  SUCCESS
+  FAILED
+  PENDING_AT_PROVIDER
+}
+
+enum SignatureKind {
+  STAMP_IMAGE
+  DSC_REFERENCE
+}
+
+enum DeletionStatus {
+  REQUESTED
+  UNDER_REVIEW
+  COMPLETED
+  REJECTED
+}
+
+// ---------------------------------------------------------------------
+// GEOGRAPHY (master data)
+// ---------------------------------------------------------------------
+
+model District {
+  id     Int     @id @default(autoincrement())
+  code   String? @unique @db.VarChar(10)
+  name   String  @unique @db.VarChar(100)
+  nameTa String? @db.VarChar(150)
+  active Boolean @default(true)
+
+  taluks               Taluk[]
+  profiles             Profile[]
+  retailerProfiles     RetailerProfile[]
+  distributorProfiles  DistributorProfile[]
+  agentProfiles        AgentProfile[]
+  distributorRegions   DistributorRegion[]
+  serviceAvailability  ServiceAvailability[]
+  signatureAssets      SignatureAsset[]
+  employeeAssignments  EmployeeServiceAssignment[]
+
+  @@map("districts")
+}
+
+model Taluk {
+  id         Int     @id @default(autoincrement())
+  districtId Int @map("district_id")
+  name       String  @db.VarChar(100)
+  nameTa     String? @db.VarChar(150)
+  active     Boolean @default(true)
+
+  district         District          @relation(fields: [districtId], references: [id])
+  panchayaths      Panchayath[]
+  profiles         Profile[]
+  retailerProfiles RetailerProfile[]
+
+  @@unique([districtId, name])
+
+  @@map("taluks")
+}
+
+model Panchayath {
+  id      Int     @id @default(autoincrement())
+  talukId Int @map("taluk_id")
+  name    String  @db.VarChar(120)
+  nameTa  String? @db.VarChar(180)
+  active  Boolean @default(true)
+
+  taluk            Taluk             @relation(fields: [talukId], references: [id])
+  profiles         Profile[]
+  retailerProfiles RetailerProfile[]
+
+  @@unique([talukId, name])
+
+  @@map("panchayaths")
+}
+
+// ---------------------------------------------------------------------
+// IDENTITY: one row per account, role-specific profile tables below
+// Guests have NO user row (see Application.guest* columns).
+// ---------------------------------------------------------------------
+
+model User {
+  id                 String     @id @default(uuid()) @db.Char(36)
+  role               Role
+  status             UserStatus @default(PENDING_VERIFICATION)
+  statusReason       String?    @db.VarChar(500)
+  suspendedAt        DateTime?
+
+  phoneHash          String?    @db.Char(64)
+  phoneEnc           String?    @db.Text
+  phoneVerifiedAt    DateTime?
+  emailHash          String?    @unique @db.Char(64)
+  emailEnc           String?    @db.Text
+  emailVerifiedAt    DateTime?
+
+  passwordHash       String?    @db.VarChar(255)
+  passwordChangedAt  DateTime?
+  mustChangePassword Boolean    @default(false)
+  totpSecretEnc      String?    @db.Text
+  totpEnabledAt      DateTime?
+  failedLoginCount   Int        @default(0)
+  lockedUntil        DateTime?
+  lastLoginAt        DateTime?
+  lastLoginIp        String?    @db.VarChar(45)
+
+  language           Language   @default(EN)
+  themePref          ThemePref  @default(LIGHT)
+
+  createdById        String?    @db.Char(36)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  deletedAt          DateTime?
+
+  profile             Profile?
+  retailerProfile     RetailerProfile?
+  distributorProfile  DistributorProfile?
+  agentProfile        AgentProfile?
+  employeeProfile     EmployeeProfile?
+  adminProfile        AdminProfile?
+  sessions            Session[]
+  recoveryCodes       StaffRecoveryCode[]
+  wallet              Wallet?
+  referralCode        ReferralCode?
+  referralsMade       Referral[]          @relation("Referrer")
+  referralReceived    Referral?           @relation("Referred")
+  kycSubmissions      KycSubmission[]
+  iamRequestsAsTarget IamRequest[]        @relation("IamTarget")
+  anomalyFlags        AnomalyFlag[]
+  documents           Document[]
+  payments            Payment[]
+  tickets             Ticket[]
+  notifications       Notification[]
+  applications        Application[]       @relation("ApplicationCustomer")
+  managedByAgents     AgentCustomer[]     @relation("ManagedCustomer")
+  consents            Consent[]
+  deletionRequests    DataDeletionRequest[]
+  payoutMethods       PayoutMethod[]
+  payoutRequests      PayoutRequest[]
+  partnerApiTransactions PartnerApiTransaction[]
+
+  @@unique([phoneHash, role])
+  @@index([role, status])
+  @@index([createdAt])
+
+  @@map("users")
+}
+
+// Customer (citizen) personal data. Also used by partner roles for their
+// own identity details. Every PII field is encrypted.
+model Profile {
+  userId          String   @id @db.Char(36)
+  fullNameEnc     String   @db.Text
+  fatherNameEnc   String?  @db.Text
+  dobEnc          String?  @db.Text
+  genderEnc       String?  @db.Text
+  addressLine1Enc String?  @db.Text
+  addressLine2Enc String?  @db.Text
+  districtId      Int?
+  talukId         Int?
+  panchayathId    Int?
+  pincode         String?  @db.Char(6)
+  aadhaarLast4    String?  @db.Char(4)
+  panEnc          String?  @db.Text
+  panHash         String?  @db.Char(64)
+  voterIdEnc      String?  @db.Text
+  voterIdHash     String?  @db.Char(64)
+  photoDocumentId String?  @unique @db.Char(36)
+  completionPct   Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  district   District?   @relation(fields: [districtId], references: [id])
+  taluk      Taluk?      @relation(fields: [talukId], references: [id])
+  panchayath Panchayath? @relation(fields: [panchayathId], references: [id])
+  photo      Document?   @relation("ProfilePhoto", fields: [photoDocumentId], references: [id])
+
+  @@index([panHash])
+  @@index([voterIdHash])
+
+  @@map("profiles")
+}
+
+model DistributorProfile {
+  userId              String    @id @db.Char(36)
+  businessName        String    @db.VarChar(150)
+  contactPersonEnc    String?   @db.Text
+  addressEnc          String?   @db.Text
+  districtId          Int?
+  pincode             String?   @db.Char(6)
+  gstinHash           String?   @db.Char(64)
+  gstinEnc            String?   @db.Text
+  kycStatus           KycStatus @default(NOT_SUBMITTED)
+  agreementDocumentId String?   @db.Char(36)
+  maxRetailers        Int?
+  approvedById        String?   @db.Char(36)
+  approvedAt          DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  district     District?        @relation(fields: [districtId], references: [id])
+  regions      DistributorRegion[]
+  retailers    RetailerProfile[]
+  agents       AgentProfile[]
+  applications Application[]
+  invites      PartnerInvite[]
+
+  @@index([kycStatus])
+
+  @@map("distributor_profiles")
+}
+
+model DistributorRegion {
+  distributorId String @db.Char(36)
+  districtId    Int
+
+  distributor DistributorProfile @relation(fields: [distributorId], references: [userId], onDelete: Cascade)
+  district    District           @relation(fields: [districtId], references: [id])
+
+  @@id([distributorId, districtId])
+
+  @@map("distributor_regions")
+}
+
+model RetailerProfile {
+  userId        String    @id @db.Char(36)
+  distributorId String?   @db.Char(36)
+  shopName      String    @db.VarChar(150)
+  ownerNameEnc  String?   @db.Text
+  shopAddressEnc String?  @db.Text
+  districtId    Int?
+  talukId       Int?
+  panchayathId  Int?
+  pincode       String?   @db.Char(6)
+  gstinHash     String?   @db.Char(64)
+  gstinEnc      String?   @db.Text
+  kycStatus     KycStatus @default(NOT_SUBMITTED)
+  onboardedVia  String    @default("DISTRIBUTOR_INVITE") @db.VarChar(30)
+  approvedById  String?   @db.Char(36)
+  approvedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  distributor  DistributorProfile? @relation(fields: [distributorId], references: [userId])
+  district     District?           @relation(fields: [districtId], references: [id])
+  taluk        Taluk?              @relation(fields: [talukId], references: [id])
+  panchayath   Panchayath?         @relation(fields: [panchayathId], references: [id])
+  applications Application[]
+
+  @@index([distributorId])
+  @@index([kycStatus])
+
+  @@map("retailer_profiles")
+}
+
+model RetailerMarketplaceProduct {
+  id              Int      @id @default(autoincrement()) @db.UnsignedInt
+  retailerId      Int      @map("retailer_id") @db.Int
+  name            String   @db.VarChar(120)
+  category        String   @db.VarChar(80)
+  description     String   @db.Text
+  pricePaise      BigInt   @map("price_paise") @db.UnsignedBigInt
+  stock           Int      @default(0) @db.UnsignedInt
+  photosJson      Json     @map("photos_json")
+  expiryDate      DateTime? @map("expiry_date") @db.Date
+  status          String   @default("DRAFT") @db.VarChar(20)
+  rejectionReason String?  @map("rejection_reason") @db.VarChar(500)
+  reviewedAt      DateTime? @map("reviewed_at") @db.DateTime(0)
+  reviewedBy      String?  @map("reviewed_by") @db.VarChar(120)
+  createdAt       DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@index([retailerId, updatedAt], map: "idx_marketplace_product_retailer")
+  @@index([status, updatedAt], map: "idx_marketplace_product_status")
+  @@map("retailer_marketplace_products")
+}
+
+model MarketplaceSubscriptionPlan {
+  id            Int      @id @default(autoincrement()) @db.UnsignedInt
+  name          String   @db.VarChar(120)
+  billingPeriod String   @map("billing_period") @db.VarChar(20)
+  pricePaise    BigInt   @map("price_paise") @db.UnsignedBigInt
+  benefitsJson  Json     @map("benefits_json")
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@index([active, billingPeriod], map: "idx_marketplace_plan_active")
+  @@map("marketplace_subscription_plans")
+}
+
+model RetailerMarketplaceSubscription {
+  id                BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  retailerId        Int      @map("retailer_id") @db.Int
+  planId            Int      @map("plan_id") @db.UnsignedInt
+  razorpayOrderId   String   @unique(map: "uq_retailer_subscription_order") @map("razorpay_order_id") @db.VarChar(100)
+  razorpayPaymentId String   @unique(map: "uq_retailer_subscription_payment") @map("razorpay_payment_id") @db.VarChar(100)
+  amountPaise       BigInt   @map("amount_paise") @db.UnsignedBigInt
+  entitlementsJson  Json     @map("entitlements_json")
+  status            String   @default("ACTIVE") @db.VarChar(20)
+  startsAt          DateTime @map("starts_at") @db.DateTime(0)
+  expiresAt         DateTime @map("expires_at") @db.DateTime(0)
+  createdAt         DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@index([retailerId, status, expiresAt], map: "idx_retailer_subscription_entitlement")
+  @@map("retailer_marketplace_subscriptions")
+}
+
+model AgentProfile {
+  userId        String    @id @db.Char(36)
+  distributorId String?   @db.Char(36)
+  districtId    Int?
+  kycStatus     KycStatus @default(NOT_SUBMITTED)
+  approvedById  String?   @db.Char(36)
+  approvedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  distributor  DistributorProfile? @relation(fields: [distributorId], references: [userId])
+  district     District?           @relation(fields: [districtId], references: [id])
+  customers    AgentCustomer[]
+  applications Application[]
+
+  @@index([distributorId])
+
+  @@map("agent_profiles")
+}
+
+model AgentCustomer {
+  agentId    String   @db.Char(36)
+  customerId String   @db.Char(36)
+  createdAt  DateTime @default(now())
+
+  agent    AgentProfile @relation(fields: [agentId], references: [userId], onDelete: Cascade)
+  customer User         @relation("ManagedCustomer", fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@id([agentId, customerId])
+  @@index([customerId])
+
+  @@map("agent_customers")
+}
+
+model PartnerInvite {
+  id            Int       @id @default(autoincrement())
+  distributorId String    @db.Char(36)
+  role          Role
+  phoneHash     String    @db.Char(64)
+  tokenHash     String    @unique @db.Char(64)
+  expiresAt     DateTime
+  usedAt        DateTime?
+  createdAt     DateTime  @default(now())
+
+  distributor DistributorProfile @relation(fields: [distributorId], references: [userId], onDelete: Cascade)
+
+  @@index([phoneHash])
+
+  @@map("partner_invites")
+}
+
+model EmployeeProfile {
+  userId           String   @id @db.Char(36)
+  employeeCode     String   @unique @db.VarChar(30)
+  department       String?  @db.VarChar(80)
+  designation      String?  @db.VarChar(80)
+  canVerify        Boolean  @default(true)
+  canSign          Boolean  @default(false)
+  canHandleQueries Boolean  @default(true)
+  canManageIam     Boolean  @default(false)
+  maxOpenTasks     Int      @default(25)
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applications    Application[]
+  reviews         VerificationReview[]
+  tickets         Ticket[]
+  certificates    Certificate[]
+  signatureAssets SignatureAsset[]
+  serviceAssignments EmployeeServiceAssignment[]
+
+  @@map("employee_profiles")
+}
+
+model SignatureAsset {
+  id          Int           @id @default(autoincrement())
+  employeeId  String        @db.Char(36)
+  districtId  Int?
+  kind        SignatureKind
+  storageKey  String?       @db.VarChar(128)
+  sha256      String?       @db.Char(64)
+  dscRef      String?       @db.VarChar(200)
+  active      Boolean       @default(true)
+  validFrom   DateTime?
+  validTo     DateTime?
+  createdAt   DateTime      @default(now())
+
+  employee     EmployeeProfile @relation(fields: [employeeId], references: [userId], onDelete: Cascade)
+  district     District?       @relation(fields: [districtId], references: [id])
+  certificates Certificate[]
+
+  @@index([employeeId, active])
+
+  @@map("signature_assets")
+}
+
+model AdminProfile {
+  userId       String   @id @db.Char(36)
+  isSuperadmin Boolean  @default(false)
+  permissions  Json
+  ipAllowlist  Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("admin_profiles")
+}
+
+// ---------------------------------------------------------------------
+// AUTH: sessions, OTP, recovery, attempts, rate limits
+// One table, one row per login. "portal" binds the session to ONE portal.
+// Token hash uses a per-portal secret, so a token cannot validate elsewhere.
+// ---------------------------------------------------------------------
+
+model Session {
+  id            String    @id @default(uuid()) @db.Char(36)
+  portal        Portal
+  userId        String?   @db.Char(36)
+  applicationId String?   @db.Char(36)
+  tokenHash     String    @unique @db.Char(64)
+  expiresAt     DateTime
+  idleExpiresAt DateTime
+  lastSeenAt    DateTime  @default(now())
+  ip            String?   @db.VarChar(45)
+  userAgent     String?   @db.VarChar(300)
+  deviceLabel   String?   @db.VarChar(100)
+  revokedAt     DateTime?
+  revokedById   String?   @db.Char(36)
+  revokeReason  String?   @db.VarChar(300)
+  createdAt     DateTime  @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, portal, revokedAt])
+  @@index([expiresAt])
+
+  @@map("sessions")
+}
+
+model OtpCode {
+  id          String     @id @default(uuid()) @db.Char(36)
+  purpose     OtpPurpose
+  portal      Portal
+  phoneHash   String     @db.Char(64)
+  codeHash    String     @db.Char(64)
+  attempts    Int        @default(0)
+  maxAttempts Int        @default(5)
+  expiresAt   DateTime
+  consumedAt  DateTime?
+  contextRef  String?    @db.VarChar(64)
+  ip          String?    @db.VarChar(45)
+  createdAt   DateTime   @default(now())
+
+  @@index([phoneHash, purpose, createdAt])
+  @@index([expiresAt])
+
+  @@map("otp_codes")
+}
+
+model StaffRecoveryCode {
+  id        Int       @id @default(autoincrement())
+  userId    String    @db.Char(36)
+  codeHash  String    @db.VarChar(255)
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+
+  @@map("staff_recovery_codes")
+}
+
+model LoginAttempt {
+  id             BigInt   @id @default(autoincrement())
+  portal         Portal
+  identifierHash String   @db.Char(64)
+  success        Boolean
+  reason         String?  @db.VarChar(60)
+  ip             String?  @db.VarChar(45)
+  createdAt      DateTime @default(now())
+
+  @@index([identifierHash, createdAt])
+  @@index([ip, createdAt])
+
+  @@map("login_attempts")
+}
+
+model RateLimitBucket {
+  key         String   @id @db.VarChar(160)
+  count       Int      @default(0)
+  windowStart DateTime
+  expiresAt   DateTime
+
+  @@index([expiresAt])
+
+  @@map("rate_limit_buckets")
+}
+
+// ---------------------------------------------------------------------
+// SERVICE CATALOG
+// ---------------------------------------------------------------------
+
+model ServiceCategory {
+  id        Int      @id @default(autoincrement())
+  parentId  Int?
+  slug      String   @unique @db.VarChar(80)
+  nameEn    String   @db.VarChar(120)
+  nameTa    String?  @db.VarChar(200)
+  iconKey   String?  @db.VarChar(40)
+  sortOrder Int      @default(0)
+  active    Boolean  @default(true)
+
+  parent   ServiceCategory?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children ServiceCategory[] @relation("CategoryTree")
+  services Service[]
+
+  @@map("service_categories")
+}
+
+model Service {
+  id               Int      @id @default(autoincrement())
+  categoryId       Int
+  code             String   @unique @db.VarChar(50)
+  nameEn           String   @db.VarChar(160)
+  nameTa           String?  @db.VarChar(260)
+  descriptionEn    String?  @db.Text
+  descriptionTa    String?  @db.Text
+  iconKey          String?  @db.VarChar(40)
+  feePaise         BigInt
+  processingDays   Int      @default(3)
+  allowGuest       Boolean  @default(false)
+  allowAssisted    Boolean  @default(true)
+  requiresSignature Boolean @default(true)
+  currentVersion   Int      @default(1)
+  active           Boolean  @default(true)
+  sortOrder        Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  category     ServiceCategory             @relation(fields: [categoryId], references: [id])
+  versions     ServiceSchemaVersion[]
+  requirements ServiceDocumentRequirement[]
+  applications Application[]
+  commissions  CommissionRule[]
+  availability ServiceAvailability[]
+  signaturePlacement ServiceSignaturePlacement?
+  documentTemplate  ServiceDocumentTemplate?
+  employeeAssignments EmployeeServiceAssignment[]
+
+  @@index([categoryId, active])
+
+  @@map("services")
+}
+
+// Form definitions are versioned so old applications keep their schema.
+model ServiceSchemaVersion {
+  id                Int      @id @default(autoincrement())
+  serviceId         Int
+  version           Int
+  fieldSchema       Json
+  checklistTemplate Json?
+  publishedAt       DateTime @default(now())
+  publishedById     String?  @db.Char(36)
+
+  service      Service       @relation(fields: [serviceId], references: [id])
+  applications Application[]
+
+  @@unique([serviceId, version])
+
+  @@map("service_schema_versions")
+}
+
+model ServiceDocumentRequirement {
+  id          Int      @id @default(autoincrement())
+  serviceId   Int
+  code        String   @db.VarChar(40)
+  labelEn     String   @db.VarChar(160)
+  labelTa     String?  @db.VarChar(260)
+  required    Boolean  @default(true)
+  allowedMime Json?
+  maxSizeKb   Int      @default(5120)
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  links   ApplicationDocument[]
+
+  @@unique([serviceId, code])
+
+  @@map("service_document_requirements")
+}
+
+// Percentages in basis points (100 bps = 1%). serviceId null = default rule.
+model CommissionRule {
+  id             Int       @id @default(autoincrement())
+  serviceId      Int?
+  retailerBps    Int
+  distributorBps Int
+  agentBps       Int       @default(0)
+  effectiveFrom  DateTime
+  effectiveTo    DateTime?
+  active         Boolean   @default(true)
+  createdById    String?   @db.Char(36)
+
+  service Service? @relation(fields: [serviceId], references: [id])
+
+  @@index([serviceId, active, effectiveFrom])
+
+  @@map("commission_rules")
+}
+
+// ---------------------------------------------------------------------
+// APPLICATIONS
+// ---------------------------------------------------------------------
+
+model Application {
+  id               String            @id @default(uuid()) @db.Char(36)
+  referenceNo      String            @unique @db.VarChar(24)
+  serviceId        Int
+  schemaVersionId  Int
+  applicantType    ApplicantType
+  customerId       String?           @db.Char(36)
+  guestPhoneHash   String?           @db.Char(64)
+  guestPhoneEnc    String?           @db.Text
+  guestNameEnc     String?           @db.Text
+  submittedById    String?           @db.Char(36)
+  submittedByRole  Role?
+  retailerId       String?           @db.Char(36)
+  distributorId    String?           @db.Char(36)
+  agentId          String?           @db.Char(36)
+  status           ApplicationStatus @default(DRAFT)
+  formDataEnc      String            @db.LongText
+  feePaise         BigInt
+  paymentMode      PaymentMode?
+  paidAt           DateTime?
+  assignedEmployeeId String?         @db.Char(36)
+  assignedAt       DateTime?
+  slaDueAt         DateTime?
+  returnCount      Int               @default(0)
+  lastRemarks      String?           @db.VarChar(1000)
+  submittedAt      DateTime?
+  completedAt      DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  service          Service              @relation(fields: [serviceId], references: [id])
+  schemaVersion    ServiceSchemaVersion @relation(fields: [schemaVersionId], references: [id])
+  customer         User?                @relation("ApplicationCustomer", fields: [customerId], references: [id])
+  retailer         RetailerProfile?     @relation(fields: [retailerId], references: [userId])
+  distributor      DistributorProfile?  @relation(fields: [distributorId], references: [userId])
+  agent            AgentProfile?        @relation(fields: [agentId], references: [userId])
+  assignedEmployee EmployeeProfile?     @relation(fields: [assignedEmployeeId], references: [userId])
+  statusHistory    ApplicationStatusHistory[]
+  documents        ApplicationDocument[]
+  reviews          VerificationReview[]
+  certificate      Certificate?
+  payments         Payment[]
+  commissionEntries CommissionEntry[]
+  tickets          Ticket[]
+
+  @@index([status, slaDueAt])
+  @@index([customerId, status])
+  @@index([retailerId, status])
+  @@index([distributorId])
+  @@index([agentId])
+  @@index([assignedEmployeeId, status])
+  @@index([guestPhoneHash])
+  @@index([serviceId])
+
+  @@map("applications")
+}
+
+model ApplicationStatusHistory {
+  id            BigInt            @id @default(autoincrement())
+  applicationId String            @db.Char(36)
+  fromStatus    ApplicationStatus?
+  toStatus      ApplicationStatus
+  actorId       String?           @db.Char(36)
+  actorRole     String?           @db.VarChar(20)
+  remarks       String?           @db.VarChar(1000)
+  createdAt     DateTime          @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, createdAt])
+
+  @@map("application_status_history")
+}
+
+model ApplicationDocument {
+  id            Int      @id @default(autoincrement())
+  applicationId String   @db.Char(36)
+  documentId    String   @db.Char(36)
+  requirementId Int?
+  label         String?  @db.VarChar(160)
+  createdAt     DateTime @default(now())
+
+  application Application                 @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  document    Document                    @relation(fields: [documentId], references: [id])
+  requirement ServiceDocumentRequirement? @relation(fields: [requirementId], references: [id])
+
+  @@unique([applicationId, documentId])
+
+  @@map("application_documents")
+}
+
+model VerificationReview {
+  id            Int            @id @default(autoincrement())
+  applicationId String         @db.Char(36)
+  reviewerId    String         @db.Char(36)
+  round         Int            @default(1)
+  checklist     Json?
+  decision      ReviewDecision @default(PENDING)
+  remarks       String?        @db.VarChar(1000)
+  startedAt     DateTime       @default(now())
+  decidedAt     DateTime?
+
+  application Application     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  reviewer    EmployeeProfile @relation(fields: [reviewerId], references: [userId])
+
+  @@unique([applicationId, round])
+  @@index([reviewerId, decision])
+
+  @@map("verification_reviews")
+}
+
+// Final signed output. verifyCode is shown in the QR for public verification.
+model Certificate {
+  id               Int       @id @default(autoincrement())
+  applicationId    String    @unique @db.Char(36)
+  serialNo         String    @unique @db.VarChar(40)
+  verifyCode       String    @unique @db.VarChar(40)
+  documentId       String    @unique @db.Char(36)
+  sha256           String    @db.Char(64)
+  signedById       String    @db.Char(36)
+  signatureAssetId Int
+  signedAt         DateTime  @default(now())
+  revokedAt        DateTime?
+  revokedReason    String?   @db.VarChar(300)
+
+  application    Application     @relation(fields: [applicationId], references: [id])
+  document       Document        @relation("CertificateDoc", fields: [documentId], references: [id])
+  signedBy       EmployeeProfile @relation(fields: [signedById], references: [userId])
+  signatureAsset SignatureAsset  @relation(fields: [signatureAssetId], references: [id])
+
+  @@map("certificates")
+}
+
+// ---------------------------------------------------------------------
+// DOCUMENTS (encrypted at rest, tokenized access only)
+// ---------------------------------------------------------------------
+
+model Document {
+  id             String         @id @default(uuid()) @db.Char(36)
+  ownerUserId    String?        @db.Char(36)
+  kind           DocumentKind
+  originalNameEnc String?       @db.Text
+  storageKey     String         @unique @db.VarChar(128)
+  mimeType       String         @db.VarChar(80)
+  sizeBytes      Int
+  sha256         String         @db.Char(64)
+  keyVersion     Int            @default(1)
+  scanStatus     ScanStatus     @default(PENDING)
+  status         DocumentStatus @default(ACTIVE)
+  retentionUntil DateTime?
+  createdAt      DateTime       @default(now())
+  deletedAt      DateTime?
+
+  owner            User?                 @relation(fields: [ownerUserId], references: [id])
+  profilePhotoOf   Profile?              @relation("ProfilePhoto")
+  applicationLinks ApplicationDocument[]
+  kycLinks         KycDocument[]
+  accessTokens     DocumentAccessToken[]
+  certificate      Certificate?          @relation("CertificateDoc")
+  receipt          Receipt?              @relation("ReceiptDoc")
+
+  @@index([ownerUserId, kind])
+  @@index([retentionUntil, status])
+
+  @@map("documents")
+}
+
+// Short-lived, single-purpose access tokens (2 to 5 minutes).
+model DocumentAccessToken {
+  id             Int          @id @default(autoincrement())
+  documentId     String       @db.Char(36)
+  tokenHash      String       @unique @db.Char(64)
+  issuedToUserId String?      @db.Char(36)
+  issuedToPortal Portal
+  purpose        TokenPurpose
+  expiresAt      DateTime
+  usedAt         DateTime?
+  ip             String?      @db.VarChar(45)
+  createdAt      DateTime     @default(now())
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+
+  @@map("document_access_tokens")
+}
+
+// ---------------------------------------------------------------------
+// PAYMENTS
+// ---------------------------------------------------------------------
+
+model Payment {
+  id                String          @id @default(uuid()) @db.Char(36)
+  purpose           PaymentPurpose
+  provider          PaymentProvider @default(RAZORPAY)
+  userId            String?         @db.Char(36)
+  applicationId     String?         @db.Char(36)
+  guestPhoneHash    String?         @db.Char(64)
+  targetWalletId    String?         @db.Char(36)
+  providerOrderId   String          @unique @db.VarChar(80)
+  providerPaymentId String?         @unique @db.VarChar(80)
+  amountPaise       BigInt
+  currency          String          @default("INR") @db.Char(3)
+  status            PaymentStatus   @default(CREATED)
+  method            String?         @db.VarChar(30)
+  signatureVerifiedAt DateTime?
+  capturedAt        DateTime?
+  failureCode       String?         @db.VarChar(60)
+  failureReason     String?         @db.VarChar(300)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  payer       User?          @relation(fields: [userId], references: [id])
+  application Application?   @relation(fields: [applicationId], references: [id])
+  events      PaymentEvent[]
+  refunds     Refund[]
+  receipt     Receipt?
+
+  @@index([userId, status])
+  @@index([applicationId])
+  @@index([status, createdAt])
+
+  @@map("payments")
+}
+
+// providerEventId is unique per provider, which gives webhook idempotency.
+model PaymentEvent {
+  id              BigInt          @id @default(autoincrement())
+  paymentId       String?         @db.Char(36)
+  provider        PaymentProvider
+  providerEventId String          @db.VarChar(100)
+  eventType       String          @db.VarChar(60)
+  payload         Json
+  signatureValid  Boolean
+  receivedAt      DateTime        @default(now())
+  processedAt     DateTime?
+  processingError String?         @db.VarChar(500)
+
+  payment Payment? @relation(fields: [paymentId], references: [id])
+
+  @@unique([provider, providerEventId])
+  @@index([paymentId])
+
+  @@map("payment_events")
+}
+
+model Refund {
+  id               Int          @id @default(autoincrement())
+  paymentId        String       @db.Char(36)
+  amountPaise      BigInt
+  reason           String       @db.VarChar(300)
+  status           RefundStatus @default(REQUESTED)
+  providerRefundId String?      @unique @db.VarChar(80)
+  requestedById    String?      @db.Char(36)
+  approvedById     String?      @db.Char(36)
+  createdAt        DateTime     @default(now())
+  processedAt      DateTime?
+
+  payment Payment @relation(fields: [paymentId], references: [id])
+
+  @@index([paymentId])
+
+  @@map("refunds")
+}
+
+model Receipt {
+  id         Int      @id @default(autoincrement())
+  paymentId  String   @unique @db.Char(36)
+  receiptNo  String   @unique @db.VarChar(30)
+  documentId String?  @unique @db.Char(36)
+  sha256     String?  @db.Char(64)
+  issuedAt   DateTime @default(now())
+
+  payment  Payment   @relation(fields: [paymentId], references: [id])
+  document Document? @relation("ReceiptDoc", fields: [documentId], references: [id])
+
+  @@map("receipts")
+}
+
+model IdempotencyKey {
+  key            String    @id @db.VarChar(128)
+  scope          String    @db.VarChar(60)
+  requestHash    String    @db.Char(64)
+  responseStatus Int?
+  responseBody   Json?
+  lockedAt       DateTime?
+  createdAt      DateTime  @default(now())
+  expiresAt      DateTime
+
+  @@index([expiresAt])
+
+  @@map("idempotency_keys")
+}
+
+// ---------------------------------------------------------------------
+// WALLET, TRANSFERS, COMMISSIONS
+// Lock the wallets row (SELECT ... FOR UPDATE) before every ledger write.
+// ---------------------------------------------------------------------
+
+model Wallet {
+  id                  String       @id @default(uuid()) @db.Char(36)
+  userId              String       @unique @db.Char(36)
+  balancePaise        BigInt       @default(0)
+  version             Int          @default(0)
+  status              WalletStatus @default(ACTIVE)
+  lowBalanceThresholdPaise BigInt?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  user         User                       @relation(fields: [userId], references: [id])
+  ledger       WalletLedger[]
+  transfersOut FundTransfer[]             @relation("TransferFrom")
+  transfersIn  FundTransfer[]             @relation("TransferTo")
+  adjustments  WalletAdjustmentRequest[]
+  commissions  CommissionEntry[]
+  payouts      PayoutRequest[]
+
+  @@map("wallets")
+}
+
+model WalletLedger {
+  id                BigInt          @id @default(autoincrement())
+  walletId          String          @db.Char(36)
+  direction         LedgerDirection
+  amountPaise       BigInt
+  balanceAfterPaise BigInt
+  refType           LedgerRefType
+  refId             String?         @db.VarChar(64)
+  narration         String?         @db.VarChar(200)
+  idempotencyKey    String          @unique @db.VarChar(128)
+  createdById       String?         @db.Char(36)
+  createdAt         DateTime        @default(now())
+
+  wallet Wallet @relation(fields: [walletId], references: [id])
+
+  @@index([walletId, id])
+  @@index([refType, refId])
+
+  @@map("wallet_ledger")
+}
+
+// Distributor funds a retailer (or agent) from the distributor wallet.
+model FundTransfer {
+  id           String         @id @default(uuid()) @db.Char(36)
+  fromWalletId String         @db.Char(36)
+  toWalletId   String         @db.Char(36)
+  amountPaise  BigInt
+  status       TransferStatus @default(PENDING)
+  note         String?        @db.VarChar(200)
+  requestedByRetailer Boolean @default(false)
+  createdAt    DateTime       @default(now())
+  completedAt  DateTime?
+
+  from Wallet @relation("TransferFrom", fields: [fromWalletId], references: [id])
+  to   Wallet @relation("TransferTo", fields: [toWalletId], references: [id])
+
+  @@index([fromWalletId, createdAt])
+  @@index([toWalletId, createdAt])
+
+  @@map("fund_transfers")
+}
+
+// Manual admin credit or debit. Maker-checker: requester and approver differ.
+model WalletAdjustmentRequest {
+  id            Int              @id @default(autoincrement())
+  walletId      String           @db.Char(36)
+  direction     LedgerDirection
+  amountPaise   BigInt
+  reason        String           @db.VarChar(500)
+  status        AdjustmentStatus @default(PENDING_APPROVAL)
+  requestedById String           @db.Char(36)
+  approvedById  String?          @db.Char(36)
+  createdAt     DateTime         @default(now())
+  decidedAt     DateTime?
+
+  wallet Wallet @relation(fields: [walletId], references: [id])
+
+  @@index([status, createdAt])
+
+  @@map("wallet_adjustment_requests")
+}
+
+model CommissionEntry {
+  id            Int              @id @default(autoincrement())
+  applicationId String           @db.Char(36)
+  walletId      String           @db.Char(36)
+  beneficiaryRole Role
+  bps           Int
+  amountPaise   BigInt
+  status        CommissionStatus @default(ACCRUED)
+  ledgerId      BigInt?
+  createdAt     DateTime         @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id])
+  wallet      Wallet      @relation(fields: [walletId], references: [id])
+
+  @@unique([applicationId, walletId, beneficiaryRole])
+  @@index([walletId, status])
+
+  @@map("commission_entries")
+}
+
+// ---------------------------------------------------------------------
+// REFERRALS
+// ---------------------------------------------------------------------
+
+model ReferralCode {
+  userId    String   @id @db.Char(36)
+  code      String   @unique @db.VarChar(20)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("referral_codes")
+}
+
+// referredUserId is unique: one referrer per account, no self-referral (app rule).
+model Referral {
+  id                 Int            @id @default(autoincrement())
+  referrerId         String         @db.Char(36)
+  referredUserId     String         @unique @db.Char(36)
+  codeUsed           String         @db.VarChar(20)
+  status             ReferralStatus @default(PENDING)
+  qualifyingPaymentId String?       @db.Char(36)
+  rewardPaise        BigInt?
+  rewardLedgerId     BigInt?
+  flaggedReason      String?        @db.VarChar(200)
+  createdAt          DateTime       @default(now())
+  qualifiedAt        DateTime?
+  rewardedAt         DateTime?
+
+  referrer User @relation("Referrer", fields: [referrerId], references: [id])
+  referred User @relation("Referred", fields: [referredUserId], references: [id])
+
+  @@index([referrerId, status])
+
+  @@map("referrals")
+}
+
+// ---------------------------------------------------------------------
+// QUERY DESK (feedback, grievance, contact, help desk, inquiries)
+// ---------------------------------------------------------------------
+
+model Ticket {
+  id                  String         @id @default(uuid()) @db.Char(36)
+  referenceNo         String         @unique @db.VarChar(24)
+  type                TicketType
+  status              TicketStatus   @default(OPEN)
+  priority            TicketPriority @default(NORMAL)
+  createdByUserId     String?        @db.Char(36)
+  contactNameEnc      String?        @db.Text
+  contactPhoneHash    String?        @db.Char(64)
+  contactPhoneEnc     String?        @db.Text
+  contactEmailEnc     String?        @db.Text
+  subject             String         @db.VarChar(200)
+  category            String?        @db.VarChar(60)
+  linkedApplicationId String?        @db.Char(36)
+  assignedEmployeeId  String?        @db.Char(36)
+  slaDueAt            DateTime?
+  escalatedAt         DateTime?
+  resolvedAt          DateTime?
+  resolutionNote      String?        @db.VarChar(1000)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  createdBy        User?            @relation(fields: [createdByUserId], references: [id])
+  linkedApplication Application?    @relation(fields: [linkedApplicationId], references: [id])
+  assignedEmployee EmployeeProfile? @relation(fields: [assignedEmployeeId], references: [userId])
+  messages         TicketMessage[]
+
+  @@index([status, slaDueAt])
+  @@index([assignedEmployeeId, status])
+  @@index([type, status])
+  @@index([contactPhoneHash])
+
+  @@map("tickets")
+}
+
+model TicketMessage {
+  id          BigInt            @id @default(autoincrement())
+  ticketId    String            @db.Char(36)
+  authorType  MessageAuthorType
+  authorId    String?           @db.Char(36)
+  channel     Channel           @default(WEB)
+  bodyEnc     String            @db.LongText
+  attachmentDocumentId String?  @db.Char(36)
+  createdAt   DateTime          @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId, createdAt])
+
+  @@map("ticket_messages")
+}
+
+// ---------------------------------------------------------------------
+// IAM: KYC, access decisions, anomaly flags
+// ---------------------------------------------------------------------
+
+model KycSubmission {
+  id          Int       @id @default(autoincrement())
+  userId      String    @db.Char(36)
+  forRole     Role
+  status      KycStatus @default(SUBMITTED)
+  submittedAt DateTime  @default(now())
+  reviewerId  String?   @db.Char(36)
+  reviewedAt  DateTime?
+  reason      String?   @db.VarChar(500)
+
+  user      User          @relation(fields: [userId], references: [id])
+  documents KycDocument[]
+
+  @@index([status, submittedAt])
+  @@index([userId])
+
+  @@map("kyc_submissions")
+}
+
+model KycDocument {
+  id              Int    @id @default(autoincrement())
+  kycSubmissionId Int
+  documentId      String @db.Char(36)
+  docType         String @db.VarChar(40)
+
+  submission KycSubmission @relation(fields: [kycSubmissionId], references: [id], onDelete: Cascade)
+  document   Document      @relation(fields: [documentId], references: [id])
+
+  @@unique([kycSubmissionId, documentId])
+
+  @@map("kyc_documents")
+}
+
+// Legacy account KYC uploads use a polymorphic owner (customer/retailer).
+// Keep a digest registry so exact file matches can be routed for human review.
+model VerificationDocumentArtifact {
+  id          BigInt   @id @default(autoincrement())
+  ownerType   String   @map("owner_type") @db.VarChar(20)
+  ownerId     String   @map("owner_id") @db.VarChar(64)
+  docType     String   @map("doc_type") @db.VarChar(40)
+  storageKey  String   @map("storage_key") @db.VarChar(255)
+  sha256      String   @db.Char(64)
+  mimeType    String   @map("mime_type") @db.VarChar(100)
+  byteSize    Int      @map("byte_size")
+  uploadedAt  DateTime @default(now()) @map("uploaded_at")
+
+  @@index([sha256, docType])
+  @@index([ownerType, ownerId, docType])
+  @@unique([storageKey])
+  @@map("verification_document_artifacts")
+}
+
+// Maker-checker for risky actions: approvedById must differ from requestedById.
+model IamRequest {
+  id           Int       @id @default(autoincrement())
+  targetUserId String    @db.Char(36)
+  action       IamAction
+  status       IamStatus @default(PENDING)
+  requestedById String   @db.Char(36)
+  approvedById String?   @db.Char(36)
+  reason       String    @db.VarChar(500)
+  decisionNote String?   @db.VarChar(500)
+  needsSecondApprover Boolean @default(false)
+  createdAt    DateTime  @default(now())
+  decidedAt    DateTime?
+  executedAt   DateTime?
+
+  target User @relation("IamTarget", fields: [targetUserId], references: [id])
+
+  @@index([status, createdAt])
+  @@index([targetUserId])
+
+  @@map("iam_requests")
+}
+
+model AnomalyFlag {
+  id           Int           @id @default(autoincrement())
+  userId       String        @db.Char(36)
+  kind         String        @db.VarChar(60)
+  severity     Int           @default(1)
+  details      Json?
+  status       AnomalyStatus @default(OPEN)
+  raisedById   String?       @db.Char(36)
+  resolvedById String?       @db.Char(36)
+  createdAt    DateTime      @default(now())
+  resolvedAt   DateTime?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([status, severity])
+  @@index([userId])
+
+  @@map("anomaly_flags")
+}
+
+// ---------------------------------------------------------------------
+// NOTIFICATIONS + JOB QUEUE
+// ---------------------------------------------------------------------
+
+model NotificationTemplate {
+  id            Int      @id @default(autoincrement())
+  key           String   @db.VarChar(60)
+  channel       Channel
+  language      Language
+  dltTemplateId String?  @db.VarChar(60)
+  subject       String?  @db.VarChar(200)
+  body          String   @db.Text
+  version       Int      @default(1)
+  active        Boolean  @default(true)
+  updatedAt     DateTime @updatedAt
+
+  @@unique([key, channel, language])
+
+  @@map("notification_templates")
+}
+
+// The queue and the delivery log in one table. payload must hold NO raw PII.
+model Notification {
+  id                BigInt             @id @default(autoincrement())
+  userId            String?            @db.Char(36)
+  channel           Channel
+  templateKey       String             @db.VarChar(60)
+  eventKey          String?            @unique @db.VarChar(128)
+  relatedEntityType String?            @db.VarChar(64)
+  relatedEntityId   String?            @db.VarChar(64)
+  language          Language           @default(EN)
+  toHash            String?            @db.Char(64)
+  toEnc             String?            @db.Text
+  status            NotificationStatus @default(QUEUED)
+  attempts          Int                @default(0)
+  nextAttemptAt     DateTime?
+  providerMessageId String?            @db.VarChar(80)
+  error             String?            @db.VarChar(300)
+  payload           Json?
+  createdAt         DateTime           @default(now())
+  sentAt            DateTime?
+  deliveredAt       DateTime?
+  readAt            DateTime?
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([status, nextAttemptAt])
+  @@index([userId, channel, readAt])
+  @@index([userId, readAt, createdAt])
+  @@index([relatedEntityType, relatedEntityId])
+
+  @@map("notifications")
+}
+
+model Job {
+  id          BigInt    @id @default(autoincrement())
+  queue       String    @db.VarChar(40)
+  payload     Json
+  status      JobStatus @default(PENDING)
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(5)
+  runAt       DateTime  @default(now())
+  lockedAt    DateTime?
+  lockedBy    String?   @db.VarChar(60)
+  lastError   String?   @db.VarChar(500)
+  createdAt   DateTime  @default(now())
+  finishedAt  DateTime?
+
+  @@index([status, runAt])
+  @@index([queue, status])
+
+  @@map("jobs")
+}
+
+// ---------------------------------------------------------------------
+// CONTENT
+// ---------------------------------------------------------------------
+
+model Announcement {
+  id            Int              @id @default(autoincrement())
+  kind          AnnouncementKind
+  titleEn       String           @db.VarChar(200)
+  titleTa       String?          @db.VarChar(300)
+  bodyEn        String?          @db.Text
+  bodyTa        String?          @db.Text
+  imageUrl      String?          @db.VarChar(300)
+  linkUrl       String?          @db.VarChar(300)
+  portalTargets Json
+  sortOrder     Int              @default(0)
+  active        Boolean          @default(true)
+  publishedAt   DateTime?
+  expiresAt     DateTime?
+  createdById   String?          @db.Char(36)
+  createdAt     DateTime         @default(now())
+
+  @@index([kind, active, publishedAt])
+
+  @@map("announcements")
+}
+
+// ---------------------------------------------------------------------
+// ADDITIONS DERIVED FROM THE LEGACY DATABASE (labourseva.sql)
+// Features the legacy system had that the first draft did not cover.
+// ---------------------------------------------------------------------
+
+// Legacy: service_availability. A service can be switched off for one district.
+// No row = available. Row with available=false = offline there.
+model ServiceAvailability {
+  serviceId   Int
+  districtId  Int
+  available   Boolean  @default(true)
+  reason      String?  @db.VarChar(200)
+  updatedById String?  @db.Char(36)
+  updatedAt   DateTime @updatedAt
+
+  service  Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  district District @relation(fields: [districtId], references: [id])
+
+  @@id([serviceId, districtId])
+  @@index([districtId])
+
+  @@map("service_availability")
+}
+
+// Legacy: services.sign_pos_x / sign_pos_y / sign_page / sign_width / sign_height /
+// doc_width / doc_height. Where the stamp or signature lands on the certificate PDF.
+// Positions are fractions of the page (0 to 1) so they survive any page size.
+model ServiceSignaturePlacement {
+  serviceId Int     @id
+  page      Int     @default(1)
+  xFrac     Decimal @db.Decimal(6, 5)
+  yFrac     Decimal @db.Decimal(6, 5)
+  wFrac     Decimal @default(0.25000) @db.Decimal(6, 5)
+  hFrac     Decimal @default(0.15000) @db.Decimal(6, 5)
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@map("service_signature_placements")
+}
+
+model ServiceDocumentTemplate {
+  serviceId  Int      @id @map("service_id")
+  fileName   String   @db.VarChar(255) @map("file_name")
+  storageKey String   @db.VarChar(500) @map("storage_key")
+  mimeType   String   @db.VarChar(100) @map("mime_type")
+  byteSize   Int      @map("byte_size")
+  pageCount  Int?     @map("page_count")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@map("service_document_templates")
+}
+
+// Legacy: employee_assigned_services (service -> employee) plus tasks.
+// A service can have several verifiers; districtId narrows it to one district.
+// Legacy forced one employee per service; here load is balanced by the claim queue.
+model EmployeeServiceAssignment {
+  id         Int      @id @default(autoincrement())
+  employeeId String   @db.Char(36)
+  serviceId  Int
+  districtId Int?
+  assignedById String? @db.Char(36)
+  createdAt  DateTime @default(now())
+
+  employee EmployeeProfile @relation(fields: [employeeId], references: [userId], onDelete: Cascade)
+  service  Service         @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  district District?       @relation(fields: [districtId], references: [id])
+
+  @@unique([employeeId, serviceId, districtId])
+  @@index([serviceId, districtId])
+
+  @@map("employee_service_assignments")
+}
+
+// Legacy: registration_fees (fee_amount, referral_commission) per user type.
+model RegistrationFee {
+  role                 Role     @id
+  feePaise             BigInt   @default(0)
+  referrerRewardPaise  BigInt   @default(0)
+  active               Boolean  @default(true)
+  updatedById          String?  @db.Char(36)
+  updatedAt            DateTime @updatedAt
+
+  @@map("registration_fees")
+}
+
+// Legacy: distributor_payment_methods. Where a partner wants commission paid out.
+model PayoutMethod {
+  id               Int              @id @default(autoincrement())
+  userId           String           @db.Char(36)
+  type             PayoutMethodType
+  upiIdEnc         String?          @db.Text
+  holderNameEnc    String?          @db.Text
+  accountNumberEnc String?          @db.Text
+  accountLast4     String?          @db.Char(4)
+  ifscEnc          String?          @db.Text
+  bankName         String?          @db.VarChar(100)
+  isPrimary        Boolean          @default(false)
+  verifiedAt       DateTime?
+  verifiedById     String?          @db.Char(36)
+  active           Boolean          @default(true)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  user     User            @relation(fields: [userId], references: [id])
+  payouts  PayoutRequest[]
+
+  @@index([userId, active])
+
+  @@map("payout_methods")
+}
+
+// Legacy: payout_requests and withdrawals (two overlapping tables).
+// Flow: request -> money is held in the wallet (ledger PAYOUT_HOLD) ->
+// admin approves (maker-checker above a threshold) -> bank transfer done outside ->
+// admin records the UTR and marks PAID. Reject or cancel posts PAYOUT_RELEASE.
+model PayoutRequest {
+  id              String       @id @default(uuid()) @db.Char(36)
+  userId          String       @db.Char(36)
+  walletId        String       @db.Char(36)
+  methodId        Int
+  amountPaise     BigInt
+  status          PayoutStatus @default(PENDING)
+  holdLedgerId    BigInt?
+  releaseLedgerId BigInt?
+  utrRef          String?      @db.VarChar(60)
+  proofDocumentId String?      @db.Char(36)
+  adminNote       String?      @db.VarChar(500)
+  requestedAt     DateTime     @default(now())
+  decidedById     String?      @db.Char(36)
+  decidedAt       DateTime?
+  paidAt          DateTime?
+
+  user   User         @relation(fields: [userId], references: [id])
+  wallet Wallet       @relation(fields: [walletId], references: [id])
+  method PayoutMethod @relation(fields: [methodId], references: [id])
+
+  @@index([status, requestedAt])
+  @@index([userId, requestedAt])
+
+  @@map("payout_requests")
+}
+
+// Legacy: pan_transactions (PAN card service through an outside provider).
+// Generic so any third-party fulfilment service can reuse it.
+model PartnerApiTransaction {
+  id            Int               @id @default(autoincrement())
+  provider      String            @db.VarChar(30)
+  serviceCode   String            @db.VarChar(40)
+  requestRef    String            @unique @db.VarChar(64)
+  applicationId String?           @db.Char(36)
+  userId        String?           @db.Char(36)
+  amountPaise   BigInt            @default(0)
+  status        PartnerCallStatus @default(INITIATED)
+  providerRef   String?           @db.VarChar(100)
+  ackNoEnc      String?           @db.Text
+  requestMetaEnc String?          @db.Text
+  response      Json?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([provider, status])
+  @@index([applicationId])
+
+  @@map("partner_api_transactions")
+}
+
+// Legacy: schemes, downloads, job_listings (public content managed by admin).
+model Scheme {
+  id           Int      @id @default(autoincrement())
+  tag          String?  @db.VarChar(60)
+  titleEn      String   @db.VarChar(200)
+  titleTa      String?  @db.VarChar(300)
+  descriptionEn String? @db.Text
+  descriptionTa String? @db.Text
+  eligibility  String?  @db.VarChar(500)
+  benefit      String?  @db.VarChar(500)
+  iconUrl      String?  @db.VarChar(300)
+  applyUrl     String?  @db.VarChar(500)
+  brochureUrl  String?  @db.VarChar(500)
+  buttonLabel  String?  @db.VarChar(60)
+  sortOrder    Int      @default(0)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("schemes")
+}
+
+model DownloadItem {
+  id            Int      @id @default(autoincrement())
+  titleEn       String   @db.VarChar(200)
+  titleTa       String?  @db.VarChar(300)
+  category      String?  @db.VarChar(80)
+  storageKey    String   @db.VarChar(128)
+  fileType      String?  @db.VarChar(20)
+  sizeBytes     Int?
+  description   String?  @db.VarChar(500)
+  downloadCount Int      @default(0)
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("download_items")
+}
+
+model JobListing {
+  id          Int       @id @default(autoincrement())
+  titleEn     String    @db.VarChar(200)
+  department  String?   @db.VarChar(150)
+  location    String?   @db.VarChar(150)
+  vacancies   Int?
+  payScale    String?   @db.VarChar(120)
+  jobType     String?   @db.VarChar(60)
+  lastDate    DateTime? @db.Date
+  descriptionEn String? @db.Text
+  skillTags   Json?
+  applyUrl    String?   @db.VarChar(500)
+  open        Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("job_listings")
+}
+
+// ---------------------------------------------------------------------
+// AUDIT, SETTINGS, PRIVACY
+// ---------------------------------------------------------------------
+
+// Append-only. Each row stores the previous row's hash to detect tampering.
+model AuditLog {
+  id         BigInt   @id @default(autoincrement())
+  actorId    String?  @db.Char(36)
+  actorRole  String?  @db.VarChar(20)
+  portal     Portal?
+  action     String   @db.VarChar(80)
+  entityType String?  @db.VarChar(50)
+  entityId   String?  @db.VarChar(64)
+  reason     String?  @db.VarChar(500)
+  meta       Json?
+  ip         String?  @db.VarChar(45)
+  userAgent  String?  @db.VarChar(300)
+  prevHash   String?  @db.Char(64)
+  hash       String   @db.Char(64)
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+
+  @@map("audit_logs")
+}
+
+model Setting {
+  key         String   @id @db.VarChar(100)
+  value       Json
+  description String?  @db.VarChar(200)
+  updatedById String?  @db.Char(36)
+  updatedAt   DateTime @updatedAt
+
+  @@map("settings")
+}
+
+model Consent {
+  id            Int       @id @default(autoincrement())
+  userId        String?   @db.Char(36)
+  phoneHash     String?   @db.Char(64)
+  purpose       String    @db.VarChar(60)
+  policyVersion String    @db.VarChar(20)
+  granted       Boolean   @default(true)
+  grantedAt     DateTime  @default(now())
+  withdrawnAt   DateTime?
+  ip            String?   @db.VarChar(45)
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId, purpose])
+
+  @@map("consents")
+}
+
+model DataDeletionRequest {
+  id           Int            @id @default(autoincrement())
+  userId       String         @db.Char(36)
+  status       DeletionStatus @default(REQUESTED)
+  requestedAt  DateTime       @default(now())
+  reviewedById String?        @db.Char(36)
+  completedAt  DateTime?
+  notes        String?        @db.VarChar(500)
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([status])
+
+  @@map("data_deletion_requests")
+}
+

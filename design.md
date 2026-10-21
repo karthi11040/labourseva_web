@@ -1,5 +1,9 @@
 # LabourSeva Design System (design.md)
 
+## Public portal reference shell
+
+Match the supplied LabourSeva portal reference across public routes: a slim deep-navy utility bar with Tamil motto, A−/A+ text sizing, contrast toggle and live IST date; the supplied Tamil letterhead displayed at full available width; a full-width navy navigation bar with a saffron active marker; a white breadcrumb strip; and route content on a pale slate canvas. Do not add a separate duplicate logo row above the letterhead. The home page begins with a wide, left-aligned white welcome panel and two prominent actions, with portal and service content below it. Keep all content and actions responsive and preserve existing route behavior.
+
 **Product:** LabourSeva, a multi-portal e-service delivery platform (citizen, guest, retailer, distributor, employee, admin)
 **Audience:** Citizens and Kendra operators, mostly on mid-range Android phones, reading English or Tamil
 **Default theme:** White (light). Black (dark) is an opt-in option.
@@ -14,7 +18,15 @@
 5. **Accessible.** WCAG 2.2 AA minimum. Color is never the only signal.
 6. **Tokens only.** Components use the tokens in this file. No hard-coded hex, px or font values in components.
 
-> **Branding note.** Use LabourSeva's own wordmark and wording. Do not use government emblems, state logos, or another organisation's name or layout. Only the visual tokens (palette, type scale, spacing) are borrowed from the reference style.
+> **Branding note.** Keep LabourSeva's own wordmark, wording, routes, and supplied local letterhead. The user-provided portal HTML is the visual reference for layout and style. Adapt it to the existing Next.js app; do not copy its PHP routes, stale notice text, inline scripts, or runtime CDN setup.
+
+### Visual direction from the supplied portal reference
+
+- Public shell order: skip link, dark navy utility bar, full-width supplied local letterhead directly below it (no duplicate brand row), navy navigation, breadcrumbs, route content, slate footer with saffron top rule.
+- Palette: navy `#1e3a8a`, hover navy `#1e40af`, saffron `#ea580c`, light saffron `#fb923c`, link blue `#2563eb`, canvas `#f8fafc`, surface `#ffffff`, text `#0f172a`, border `#cbd5e1`.
+- Cards use a white surface, slate border and 4px navy top rule; hover shifts the rule to saffron with a restrained shadow. Use gentle 8–12px corners, clear spacing and square-corner primary actions.
+- The citizen portal keeps its sidebar and mobile navigation while sharing this palette, typography, card treatment and focus style.
+- The reusable page workflow is in `.agents/skills/labourseva-web-design/SKILL.md`; use that skill for all LabourSeva UI work.
 
 ---
 
@@ -24,7 +36,7 @@
 
 | Script | Family | Source | Weights |
 |---|---|---|---|
-| English / Latin / numerals | **Noto Sans** | `next/font/google`, subset `latin`, `latin-ext` | 400, 500, 600, 700 |
+| English / Latin / numerals | **Inter** | `next/font/google`, subset `latin`, `latin-ext` | 400, 500, 600, 700 |
 | Tamil | **Noto Sans Tamil** | `next/font/google`, subset `tamil` | 400, 500, 600, 700 |
 | Monospace (IDs, reference numbers, OTP) | **Noto Sans Mono** | `next/font/google`, subset `latin` | 400, 500 |
 
@@ -32,8 +44,8 @@ Self-host through `next/font` (no runtime request to Google) and use `display: s
 
 ```css
 :root {
-  --font-sans: "Noto Sans", "Noto Sans Tamil", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-sans-ta: "Noto Sans Tamil", "Noto Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans: "Inter", "Noto Sans Tamil", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans-ta: "Noto Sans Tamil", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: "Noto Sans Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 html[lang="en"] { font-family: var(--font-sans); }
@@ -84,7 +96,7 @@ On screens under 640px, step headings down one level (`text-4xl` becomes `text-3
 | Theme | Value | Notes |
 |---|---|---|
 | **Light (white)** | `data-theme="light"` | **Default for everyone.** Does not follow the OS setting unless the user chooses "System". |
-| **Dark (black)** | `data-theme="dark"` | Opt-in. Near-black background `#0C0A09`. |
+| **Dark (black)** | `data-theme="dark"` | Opt-in. Near-black background `#0f172a`. |
 | **System** | `data-theme="system"` | Opt-in. Follows `prefers-color-scheme`. |
 
 - Store the choice in a cookie (`ls_theme`), not `localStorage`, so the server renders the right theme with no flash. The theme toggle lives in the header and in profile settings.
@@ -95,75 +107,77 @@ On screens under 640px, step headings down one level (`text-4xl` becomes `text-3
 | Token | Value | Use |
 |---|---|---|
 | `--bg` | `#FFFFFF` | Page background |
-| `--bg-subtle` | `#F5F5F5` | Alternate sections, table stripes, page canvas behind cards |
+| `--bg-subtle` | `#f8fafc` | Alternate sections, table stripes, page canvas behind cards |
 | `--surface` | `#FFFFFF` | Cards, modals, menus |
-| `--surface-muted` | `#D6D3D1` | Dividers with weight, disabled fills |
-| `--border` | `#E7E5E4` | Decorative borders, card outlines |
-| `--border-strong` | `#8C857D` | Input borders, checkbox outlines (3.6:1 on white) |
-| `--text` | `#0C0A09` | Primary text |
-| `--text-secondary` | `#4E4E4E` | Secondary text |
-| `--text-muted` | `#777169` | Hints and captions. **Use on white only** (4.8:1). On `--bg-subtle` use `--text-secondary`. |
-| `--primary` | `#1D3F8F` | Brand, links, primary buttons |
-| `--primary-hover` | `#17327A` | Hover |
-| `--primary-active` | `#122963` | Pressed |
-| `--primary-tint` | `#EEF2FB` | Selected rows, soft backgrounds, secondary hover |
+| `--surface-muted` | `#e2e8f0` | Dividers with weight, disabled fills |
+| `--border` | `#cbd5e1` | Decorative borders, card outlines |
+| `--border-strong` | `#94a3b8` | Input borders, checkbox outlines (3.6:1 on white) |
+| `--text` | `#0f172a` | Primary text |
+| `--text-secondary` | `#475569` | Secondary text |
+| `--text-muted` | `#64748b` | Hints and captions. **Use on white only** (4.8:1). On `--bg-subtle` use `--text-secondary`. |
+| `--primary` | `#1e3a8a` | Brand, links, primary buttons |
+| `--primary-hover` | `#1e40af` | Hover |
+| `--primary-active` | `#172554` | Pressed |
+| `--primary-tint` | `#eff6ff` | Selected rows, soft backgrounds, secondary hover |
 | `--on-primary` | `#FFFFFF` | Text on primary |
 | `--success` / `--success-bg` / `--success-text` | `#15803D` / `#E7F6EC` / `#166534` | Completed, paid |
-| `--warning` / `--warning-bg` / `--warning-text` | `#B45309` / `#FDF1E3` / `#92400E` | Pending, attention |
+| `--warning` / `--warning-bg` / `--warning-text` | `#c2410c` / `#fff7ed` / `#9a3412` | Pending, attention |
 | `--danger` / `--danger-bg` / `--danger-text` | `#B91C1C` / `#FDECEC` / `#B91C1C` | Errors, rejected, destructive |
-| `--info` / `--info-bg` / `--info-text` | `#1D3F8F` / `#EEF2FB` / `#1D3F8F` | Informational |
-| `--focus-ring` | `#1D3F8F` | Focus outline |
+| `--info` / `--info-bg` / `--info-text` | `#1e3a8a` / `#eff6ff` / `#1e3a8a` | Informational |
+| `--focus-ring` | `#ea580c` | Focus outline |
+| `--accent-orange` | `#ea580c` | Saffron accent and hover state |
+| `--link` | `#2563eb` | Inline links |
 
 ### 2.3 Dark (black) theme tokens
 
 | Token | Value | Use |
 |---|---|---|
-| `--bg` | `#0C0A09` | Page background |
-| `--bg-subtle` | `#1C1917` | Alternate sections |
-| `--surface` | `#1C1917` | Cards, modals, menus |
-| `--surface-raised` | `#292524` | Raised cards, popovers (elevation by lighter surface) |
-| `--surface-muted` | `#44403C` | Disabled fills |
-| `--border` | `#292524` | Decorative borders |
-| `--border-strong` | `#78716C` | Input borders (4.1:1 on bg) |
-| `--text` | `#FAFAF9` | Primary text (18.9:1) |
-| `--text-secondary` | `#A8A29E` | Secondary and muted text (7.8:1) |
-| `--text-muted` | `#A8A29E` | Same as secondary in dark |
-| `--primary` | `#7FA2F0` | Brand, links, primary buttons (7.8:1) |
-| `--primary-hover` | `#9DB8F5` | Hover |
-| `--primary-active` | `#6A8DE0` | Pressed |
-| `--primary-tint` | `#17223D` | Selected rows, soft backgrounds |
-| `--on-primary` | `#0C0A09` | Text on primary (dark text on the light blue) |
+| `--bg` | `#0f172a` | Page background |
+| `--bg-subtle` | `#111827` | Alternate sections |
+| `--surface` | `#111827` | Cards, modals, menus |
+| `--surface-raised` | `#1e293b` | Raised cards, popovers (elevation by lighter surface) |
+| `--surface-muted` | `#334155` | Disabled fills |
+| `--border` | `#1e293b` | Decorative borders |
+| `--border-strong` | `#64748b` | Input borders (4.1:1 on bg) |
+| `--text` | `#f8fafc` | Primary text (18.9:1) |
+| `--text-secondary` | `#cbd5e1` | Secondary and muted text (7.8:1) |
+| `--text-muted` | `#cbd5e1` | Same as secondary in dark |
+| `--primary` | `#93c5fd` | Brand, links, primary buttons (7.8:1) |
+| `--primary-hover` | `#bfdbfe` | Hover |
+| `--primary-active` | `#60a5fa` | Pressed |
+| `--primary-tint` | `#1e3a8a` | Selected rows, soft backgrounds |
+| `--on-primary` | `#0f172a` | Text on primary (dark text on the light blue) |
 | `--success` / `--success-bg` / `--success-text` | `#4ADE80` / `#14281C` / `#4ADE80` | |
 | `--warning` / `--warning-bg` / `--warning-text` | `#FBBF24` / `#2E2410` / `#FBBF24` | |
 | `--danger` / `--danger-bg` / `--danger-text` | `#F87171` / `#321716` / `#F87171` | |
-| `--info` / `--info-bg` / `--info-text` | `#7FA2F0` / `#17223D` / `#7FA2F0` | |
-| `--focus-ring` | `#9DB8F5` | Focus outline |
+| `--info` / `--info-bg` / `--info-text` | `#93c5fd` / `#1e3a8a` / `#93c5fd` | |
+| `--focus-ring` | `#bfdbfe` | Focus outline |
 
 ### 2.4 CSS variables
 
 ```css
 :root, [data-theme="light"] {
-  --bg:#FFFFFF; --bg-subtle:#F5F5F5; --surface:#FFFFFF; --surface-muted:#D6D3D1;
-  --border:#E7E5E4; --border-strong:#8C857D;
-  --text:#0C0A09; --text-secondary:#4E4E4E; --text-muted:#777169;
-  --primary:#1D3F8F; --primary-hover:#17327A; --primary-active:#122963; --primary-tint:#EEF2FB; --on-primary:#FFFFFF;
+  --bg:#FFFFFF; --bg-subtle:#f8fafc; --surface:#FFFFFF; --surface-muted:#e2e8f0;
+  --border:#cbd5e1; --border-strong:#94a3b8;
+  --text:#0f172a; --text-secondary:#475569; --text-muted:#64748b;
+  --primary:#1e3a8a; --primary-hover:#1e40af; --primary-active:#172554; --primary-tint:#eff6ff; --on-primary:#FFFFFF;
   --success:#15803D; --success-bg:#E7F6EC; --success-text:#166534;
-  --warning:#B45309; --warning-bg:#FDF1E3; --warning-text:#92400E;
+  --warning:#c2410c; --warning-bg:#fff7ed; --warning-text:#9a3412;
   --danger:#B91C1C;  --danger-bg:#FDECEC;  --danger-text:#B91C1C;
-  --info:#1D3F8F;    --info-bg:#EEF2FB;    --info-text:#1D3F8F;
-  --focus-ring:#1D3F8F;
+  --info:#1e3a8a;    --info-bg:#eff6ff;    --info-text:#1e3a8a;
+  --focus-ring:#ea580c; --accent-orange:#ea580c; --link:#2563eb;
   color-scheme: light;
 }
 [data-theme="dark"] {
-  --bg:#0C0A09; --bg-subtle:#1C1917; --surface:#1C1917; --surface-raised:#292524; --surface-muted:#44403C;
-  --border:#292524; --border-strong:#78716C;
-  --text:#FAFAF9; --text-secondary:#A8A29E; --text-muted:#A8A29E;
-  --primary:#7FA2F0; --primary-hover:#9DB8F5; --primary-active:#6A8DE0; --primary-tint:#17223D; --on-primary:#0C0A09;
+  --bg:#0f172a; --bg-subtle:#111827; --surface:#111827; --surface-raised:#1e293b; --surface-muted:#334155;
+  --border:#1e293b; --border-strong:#64748b;
+  --text:#f8fafc; --text-secondary:#cbd5e1; --text-muted:#cbd5e1;
+  --primary:#93c5fd; --primary-hover:#bfdbfe; --primary-active:#60a5fa; --primary-tint:#1e3a8a; --on-primary:#0f172a;
   --success:#4ADE80; --success-bg:#14281C; --success-text:#4ADE80;
   --warning:#FBBF24; --warning-bg:#2E2410; --warning-text:#FBBF24;
   --danger:#F87171;  --danger-bg:#321716;  --danger-text:#F87171;
-  --info:#7FA2F0;    --info-bg:#17223D;    --info-text:#7FA2F0;
-  --focus-ring:#9DB8F5;
+  --info:#93c5fd;    --info-bg:#1e3a8a;    --info-text:#93c5fd;
+  --focus-ring:#fb923c;
   color-scheme: dark;
 }
 @media (prefers-color-scheme: dark) {
@@ -181,14 +195,14 @@ Each portal shows a persistent label so users and staff always know where they a
 | Guest | Same as customer | "Guest" chip |
 | Retailer | `--primary-tint` header strip | "Retailer" chip |
 | Distributor | `--primary-tint` header strip | "Distributor" chip |
-| Employee | `#0C0A09` header with white text | "Staff" chip |
-| Admin | `#0C0A09` header with white text and a 3px `--danger` top strip | "Admin" chip |
+| Employee | `#0f172a` header with white text | "Staff" chip |
+| Admin | `#0f172a` header with white text and a 3px `--danger` top strip | "Admin" chip |
 
 ---
 
 ## 3. Buttons
 
-**Shape:** pill (`--radius-full`). **Font:** 500 weight, `text-sm` in `sm`, `text-base` in `md` and `lg`. **Icon gap:** 8px.
+**Shape:** gentle corner (`--radius-sm` or `--radius-md`); use full circles only for icon controls, badges, avatars and toggles. **Font:** 500 weight, `text-sm` in `sm`, `text-base` in `md` and `lg`. **Icon gap:** 8px.
 
 ### 3.1 Sizes
 
@@ -204,20 +218,20 @@ Minimum touch target is 44px. Give `sm` buttons extra hit-area padding on touch 
 
 | Variant | Background | Text | Border | Hover | Active | Disabled |
 |---|---|---|---|---|---|---|
-| **Primary** | `#1D3F8F` | `#FFFFFF` | none | `#17327A`, `--shadow-primary` | `#122963` | bg `#D6D3D1`, text `#777169` |
-| **Secondary** | transparent | `#1D3F8F` | 1.5px `#1D3F8F` | bg `#EEF2FB` | bg `#DCE5F7` | border and text `#8C857D`, 50% opacity |
-| **Ghost** | transparent | `#1D3F8F` | none | bg `#F5F5F5` | bg `#E7E5E4` | text `#8C857D` |
-| **Danger** | `#B91C1C` | `#FFFFFF` | none | `#991B1B` | `#7F1D1D` | bg `#D6D3D1`, text `#777169` |
-| **Link** | none | `#1D3F8F`, underline | none | underline thickens | text `#122963` | text `#8C857D` |
+| **Primary** | `#1e3a8a` | `#FFFFFF` | none | `#1e40af`, `--shadow-primary` | `#172554` | bg `#e2e8f0`, text `#64748b` |
+| **Secondary** | transparent | `#1e3a8a` | 1.5px `#1e3a8a` | bg `#eff6ff` | bg `#dbeafe` | border and text `#94a3b8`, 50% opacity |
+| **Ghost** | transparent | `#1e3a8a` | none | bg `#f8fafc` | bg `#cbd5e1` | text `#94a3b8` |
+| **Danger** | `#B91C1C` | `#FFFFFF` | none | `#991B1B` | `#7F1D1D` | bg `#e2e8f0`, text `#64748b` |
+| **Link** | none | `#1e3a8a`, underline | none | underline thickens | text `#172554` | text `#94a3b8` |
 
 ### 3.3 Variants (dark theme)
 
 | Variant | Background | Text | Border | Hover | Active |
 |---|---|---|---|---|---|
-| **Primary** | `#7FA2F0` | `#0C0A09` | none | `#9DB8F5` | `#6A8DE0` |
-| **Secondary** | transparent | `#7FA2F0` | 1.5px `#7FA2F0` | bg `#17223D` | bg `#1F2E55` |
-| **Ghost** | transparent | `#7FA2F0` | none | bg `#292524` | bg `#44403C` |
-| **Danger** | `#F87171` | `#0C0A09` | none | `#FCA5A5` | `#EF4444` |
+| **Primary** | `#93c5fd` | `#0f172a` | none | `#bfdbfe` | `#60a5fa` |
+| **Secondary** | transparent | `#93c5fd` | 1.5px `#93c5fd` | bg `#1e3a8a` | bg `#1e40af` |
+| **Ghost** | transparent | `#93c5fd` | none | bg `#1e293b` | bg `#334155` |
+| **Danger** | `#F87171` | `#0f172a` | none | `#FCA5A5` | `#EF4444` |
 
 ### 3.4 States and behavior
 
@@ -283,9 +297,9 @@ Use only these values for padding, margin and gap.
 
 | Token | Value | Use |
 |---|---|---|
-| `radius-sm` | 8px | Inputs, chips, small controls |
-| `radius-md` | 12px | Menus, tooltips, toasts |
-| `radius-lg` | 16px | Cards, modals, dropzones |
+| `radius-sm` | 6px | Inputs, chips, small controls |
+| `radius-md` | 8px | Menus, tooltips, toasts |
+| `radius-lg` | 10–12px | Cards, modals, dropzones |
 | `radius-full` | 9999px | Buttons, badges, avatars, toggles |
 
 Do not introduce other radius values.
@@ -318,7 +332,7 @@ Light theme uses soft neutral shadows. Dark theme uses lighter surfaces plus a b
 | `--shadow-lg` | `0 10px 30px rgba(12,10,9,0.14)` | `0 10px 30px rgba(0,0,0,0.6)` | Popovers, sticky headers |
 | `--shadow-xl` | `0 20px 50px rgba(12,10,9,0.18)` | `0 20px 50px rgba(0,0,0,0.7)` | Modals, drawers |
 | `--shadow-primary` | `0 4px 14px rgba(29,63,143,0.35)` | `0 4px 14px rgba(127,162,240,0.25)` | Primary button hover |
-| `--shadow-focus` | `0 0 0 2px #FFFFFF, 0 0 0 4px #1D3F8F` | `0 0 0 2px #0C0A09, 0 0 0 4px #9DB8F5` | Alternative focus ring |
+| `--shadow-focus` | `0 0 0 2px #FFFFFF, 0 0 0 4px #1e3a8a` | `0 0 0 2px #0f172a, 0 0 0 4px #bfdbfe` | Alternative focus ring |
 
 Dark theme cards also get `1px solid var(--border)`. A scrim sits behind modals: `rgba(12,10,9,0.5)` in light, `rgba(0,0,0,0.7)` in dark.
 
@@ -606,7 +620,7 @@ A modal 2 minutes before expiry in staff and partner portals: "Your session will
 - Italic or letter-spaced Tamil text, or uppercase transforms.
 - Truncating Tamil button labels instead of letting them wrap.
 - More than one primary button per view.
-- Looking like a government site (emblems, state names) without authorization.
+- Copying official seals or asserting government ownership without authorization. The supplied visual reference does not change LabourSeva's identity.
 - Dark mode by simple color inversion. Use the tokens above.
 - Count-up animations on money amounts.
 - Spinner-only loading for content that could use a skeleton.

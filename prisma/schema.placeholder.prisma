@@ -1,0 +1,94 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  RETAILER
+  DISTRIBUTOR
+  EMPLOYEE
+  ADMIN
+}
+
+model User {
+  id        String   @id @default(cuid())
+  phone     String   @unique
+  role      Role     @default(CUSTOMER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employeeProfile    EmployeeProfile?
+  distributorProfile DistributorProfile?
+  retailerProfile    RetailerProfile?
+  wallet             Wallet?
+  walletLedger       WalletLedger[]
+}
+
+model EmployeeProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  email          String    @unique
+  passwordHash   String
+  totpSecret     String? // Encrypted
+  failedAttempts Int       @default(0)
+  lockedUntil    DateTime?
+  recoveryCodes  String?   @db.Text // Hashed or encrypted JSON array
+}
+
+model DistributorProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  shopName   String
+  kycDetails String? @db.Text // Encrypted JSON or string
+  kycStatus  String  @default("PENDING") // PENDING, APPROVED, REJECTED
+
+  retailers RetailerProfile[]
+}
+
+model RetailerProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  shopName   String
+  kycDetails String? @db.Text // Encrypted JSON or string
+  kycStatus  String  @default("PENDING")
+
+  distributorId String?
+  distributor   DistributorProfile? @relation(fields: [distributorId], references: [id])
+}
+
+model Wallet {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  balance   Int      @default(0) // Stored in integer paise, never floats
+  version   Int      @default(1) // For optimistic locking (wallets table locking)
+  updatedAt DateTime @updatedAt
+}
+
+model WalletLedger {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  amount       Int // Stored in integer paise (positive for credit, negative for debit)
+  balanceAfter Int // Balance after transaction
+  type         String // CREDIT, DEBIT, REFUND, etc.
+  reference    String? // External/internal transaction reference
+  createdAt    DateTime @default(now())
+}

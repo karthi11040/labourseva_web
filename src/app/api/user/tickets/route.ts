@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCitizenIdentity } from "@/lib/auth-helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -9,14 +10,14 @@ function generateRefNo(): string {
   return `TKT-${ts}${rand}`;
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
-
-    if (!userId) {
-      return NextResponse.json({ ok: false, error: "userId is required." }, { status: 400 });
+    const citizen = await getCitizenIdentity(request);
+    if (!citizen) {
+      return NextResponse.json({ ok: false, error: "Authentication required to view tickets.", tickets: [] }, { status: 401 });
     }
+
+    const customerId = citizen.customerId || 0;
 
     const tickets = await prisma.$queryRawUnsafe<any[]>(
       `SELECT 
@@ -29,7 +30,7 @@ export async function GET(request: Request) {
        LEFT JOIN employees e ON t.assigned_employee_id = e.id
        WHERE t.user_id = ?
        ORDER BY t.created_at DESC`,
-      Number(userId)
+      customerId
     );
 
     return NextResponse.json({
@@ -59,16 +60,21 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const citizen = await getCitizenIdentity(request);
+    if (!citizen) {
+      return NextResponse.json({ ok: false, error: "Authentication required to create a ticket." }, { status: 401 });
+    }
+
     const body = await request.json().catch(() => ({}));
     const category = body.category ? String(body.category).trim() : null;
     const subject = String(body.subject || "").trim();
     const description = String(body.description || "").trim();
-    const contact_name = body.contact_name ? String(body.contact_name).trim() : null;
-    const contact_phone = body.contact_phone ? String(body.contact_phone).trim() : null;
-    const contact_email = body.contact_email ? String(body.contact_email).trim() : null;
-    const user_id = body.user_id ? Number(body.user_id) : null;
+    const contact_name = citizen.name || (body.contact_name ? String(body.contact_name).trim() : "Citizen");
+    const contact_phone = citizen.phone || (body.contact_phone ? String(body.contact_phone).trim() : null);
+    const contact_email = citizen.email || (body.contact_email ? String(body.contact_email).trim() : null);
+    const user_id = citizen.customerId || null;
 
     if (!subject) {
       return NextResponse.json({ ok: false, error: "Subject is required." }, { status: 400 });
@@ -93,6 +99,7 @@ export async function POST(request: Request) {
       contact_email,
       user_id
     );
+
 
     const [created] = await prisma.$queryRawUnsafe<any[]>(
       `SELECT id FROM helpdesk_tickets WHERE reference_no = ? ORDER BY id DESC LIMIT 1`,

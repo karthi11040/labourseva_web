@@ -2,165 +2,294 @@
 
 import Link from "next/link";
 import {
-  Search, Filter, UserRound, Shield, Star, Heart, MapPin, Zap,
-  FileText, Scissors, HardHat, Wheat, ChevronRight, Clock, BadgeCheck,
+  Search,
+  Clock,
+  ChevronRight,
+  ArrowRight,
+  FileText,
+  BadgeCheck,
+  Shield,
+  Layers,
+  Sparkles,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 
-const categories = [
-  { id: "all", label: "All Services" },
-  { id: "construction", label: "Construction" },
-  { id: "agriculture", label: "Agriculture" },
-  { id: "textile", label: "Textile" },
-  { id: "industrial", label: "Industrial" },
-  { id: "domestic", label: "Domestic" },
-];
+interface ServiceItem {
+  id: number;
+  name: string;
+  nameTa?: string;
+  category: string;
+  fee: string;
+  time: string;
+  description: string;
+  logo?: string | null;
+}
 
-const services = [
-  { id: 1, name: "Worker Registration", fee: "₹50", cat: "all", icon: UserRound, time: "3-5 days", desc: "Register as a labour welfare beneficiary and access all welfare schemes." },
-  { id: 2, name: "Accident Relief Fund", fee: "Free", cat: "construction", icon: Shield, time: "7-10 days", desc: "Financial assistance for workplace accidents and injuries." },
-  { id: 3, name: "Children's Scholarship", fee: "Free", cat: "all", icon: Star, time: "15-30 days", desc: "Education scholarships for school and college-going children of workers." },
-  { id: 4, name: "Housing Loan Subsidy", fee: "₹100", cat: "construction", icon: MapPin, time: "30-60 days", desc: "Subsidised home loan assistance for registered workers." },
-  { id: 5, name: "Maternity Benefit", fee: "Free", cat: "textile", icon: Heart, time: "7-15 days", desc: "Financial support for women workers during maternity leave." },
-  { id: 6, name: "Tool Kit Assistance", fee: "Free", cat: "industrial", icon: Zap, time: "10-15 days", desc: "Free tool kit for skilled artisan and industrial workers." },
-  { id: 7, name: "Death Relief Fund", fee: "Free", cat: "all", icon: FileText, time: "15-30 days", desc: "Financial assistance to family in case of worker's death." },
-  { id: 8, name: "Marriage Assistance", fee: "Free", cat: "textile", icon: Heart, time: "15-20 days", desc: "One-time financial assistance for marriage of worker or daughter." },
-  { id: 9, name: "Disability Benefit", fee: "Free", cat: "industrial", icon: Shield, time: "20-30 days", desc: "Monthly assistance for workers with permanent disability." },
-  { id: 10, name: "Crop Loss Compensation", fee: "Free", cat: "agriculture", icon: Wheat, time: "30-45 days", desc: "Compensation for crop loss due to natural calamities." },
-  { id: 11, name: "Pension Scheme", fee: "₹50/month", cat: "all", icon: BadgeCheck, time: "60-90 days", desc: "Monthly pension after retirement for registered workers." },
-  { id: 12, name: "Medical Assistance", fee: "Free", cat: "all", icon: Shield, time: "10-20 days", desc: "Financial support for major illness and hospitalisation." },
+const defaultCategories = [
+  { id: "all", label: "All Services", labelTa: "அனைத்து சேவைகள்" },
+  { id: "welfare", label: "Welfare Board", labelTa: "நலவாரியம்" },
+  { id: "licensing", label: "Statutory Licensing", labelTa: "உரிமம்" },
+  { id: "schemes", label: "Social Schemes", labelTa: "திட்டங்கள்" },
+  { id: "insurance", label: "Relief & Insurance", labelTa: "நிவாரணம்" },
 ];
 
 export default function ServicesPage() {
-  const [active, setActive] = useState("all");
-  const [query, setQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [services, setServices] = useState<ServiceItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filtered = services.filter(
-    (s) =>
-      (active === "all" || s.cat === active || s.cat === "all") &&
-      (query === "" || s.name.toLowerCase().includes(query.toLowerCase()) || s.desc.toLowerCase().includes(query.toLowerCase()))
-  );
+  // Fetch real services from API
+  useEffect(() => {
+    async function loadServices() {
+      try {
+        setIsLoading(true);
+        const res = await fetch("/api/services", { cache: "no-store" });
+        const data = await res.json();
+
+        if (data.ok && Array.isArray(data.mainServices) && data.mainServices.length > 0) {
+          const flatList: ServiceItem[] = [];
+          for (const main of data.mainServices) {
+            for (const sub of main.subServices || []) {
+              flatList.push({
+                id: sub.id,
+                name: sub.name,
+                nameTa: sub.nameTa,
+                category: main.name || "General",
+                fee: sub.fee === 0 ? "Free" : `₹${sub.fee}`,
+                time: sub.time || "3-7 Days",
+                description: sub.description || "",
+                logo: sub.logo || main.logo,
+              });
+            }
+          }
+          setServices(flatList);
+        } else {
+          setServices([]);
+        }
+      } catch (err) {
+        console.error("Failed to load services catalogue:", err);
+        setServices([]);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadServices();
+  }, []);
+
+  // Filtered services
+  const filteredServices = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+
+    return services.filter((s) => {
+      const matchesCategory =
+        activeCategory === "all" ||
+        s.category.toLowerCase().includes(activeCategory.toLowerCase());
+
+      const matchesQuery =
+        !q ||
+        s.name.toLowerCase().includes(q) ||
+        (s.nameTa && s.nameTa.toLowerCase().includes(q)) ||
+        s.description.toLowerCase().includes(q) ||
+        s.category.toLowerCase().includes(q);
+
+      return matchesCategory && matchesQuery;
+    });
+  }, [services, activeCategory, searchQuery]);
 
   return (
-    <div style={{ background: "var(--bg-subtle)", minHeight: "100vh" }}>
-      {/* Page header */}
+    <div style={{ background: "var(--bg-subtle)", minHeight: "100vh" }} suppressHydrationWarning>
+      {/* Page Header */}
       <div style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          <h1 className="text-4xl font-bold mb-2" style={{ color: "var(--text)" }}>
-            All Services
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#ea580c]">
+              Government of Tamil Nadu
+            </span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-[#1e3a8a] border border-blue-200">
+              Department of Labour &amp; Employment
+            </span>
+          </div>
+
+          <h1 className="text-3xl font-extrabold sm:text-4xl text-slate-900 dark:text-white tracking-tight">
+            All Services &amp; Schemes
           </h1>
-          <p style={{ color: "var(--text-secondary)" }}>
-            Browse and apply for labour welfare services available in Tamil Nadu.
+          <p className="mt-1 text-base font-semibold text-[#1e3a8a] dark:text-blue-300 font-sans">
+            அனைத்து அரசு மற்றும் நலவாரிய சேவைகள்
+          </p>
+          <p className="mt-2 text-sm sm:text-base text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed">
+            Browse and apply for official labour welfare services, statutory certificates, and government assistance schemes available in Tamil Nadu.
           </p>
 
-          {/* Search */}
-          <div className="relative mt-6 max-w-lg">
+          {/* Search Bar */}
+          <div className="relative mt-6 max-w-xl">
             <Search
               size={18}
-              className="absolute left-4 top-1/2 -translate-y-1/2"
-              style={{ color: "var(--text-muted)" }}
+              className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400"
             />
             <input
               type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search services..."
-              className="w-full pl-11 pr-4 h-12 rounded-full border text-sm outline-none"
-              style={{
-                background: "var(--surface)",
-                borderColor: "var(--border-strong)",
-                color: "var(--text)",
-              }}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search services, schemes and certificates..."
+              className="w-full pl-11 pr-12 h-12 rounded-xl border border-slate-300 bg-white dark:bg-slate-800 dark:border-slate-700 text-sm text-slate-900 dark:text-white outline-none focus:border-[#1e3a8a] focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 transition-all shadow-2xs"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold px-2 py-0.5 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              >
+                Clear
+              </button>
+            )}
           </div>
         </div>
       </div>
 
+      {/* Main Content Area */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Category tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-8">
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setActive(cat.id)}
-              className="flex-shrink-0 h-9 px-4 rounded-full text-sm font-medium border transition-all"
-              style={
-                active === cat.id
-                  ? { background: "var(--primary)", color: "var(--on-primary)", borderColor: "var(--primary)" }
-                  : { background: "var(--surface)", color: "var(--text-secondary)", borderColor: "var(--border)" }
-              }
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Results count */}
-        <p className="text-sm mb-5" style={{ color: "var(--text-muted)" }}>
-          Showing {filtered.length} service{filtered.length !== 1 ? "s" : ""}
-        </p>
-
-        {/* Grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filtered.map((service) => {
-            const Icon = service.icon;
+        {/* Category Tabs */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-8 scrollbar-none">
+          {defaultCategories.map((cat) => {
+            const isActive = activeCategory === cat.id;
             return (
-              <article
-                key={service.id}
-                className="flex flex-col rounded-[var(--radius-lg)] border transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]"
-                style={{ background: "var(--surface)", borderColor: "var(--border)", padding: 20 }}
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setActiveCategory(cat.id)}
+                className={`flex-shrink-0 min-h-10 px-4 rounded-xl text-xs sm:text-sm font-bold border transition-all cursor-pointer active:scale-95 flex items-center gap-1.5 ${
+                  isActive
+                    ? "bg-[#1e3a8a] text-white border-[#1e3a8a] shadow-xs"
+                    : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:bg-slate-50"
+                }`}
               >
-                <div className="flex items-start gap-4 mb-4">
-                  <div
-                    className="w-12 h-12 rounded-[var(--radius-md)] flex items-center justify-center flex-shrink-0"
-                    style={{ background: "var(--primary-tint)" }}
-                  >
-                    <Icon size={22} style={{ color: "var(--primary)" }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h2 className="font-semibold text-base" style={{ color: "var(--text)" }}>
-                      {service.name}
-                    </h2>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span
-                        className="text-xs px-2 py-0.5 rounded-full font-medium"
-                        style={{ background: "var(--success-bg)", color: "var(--success-text)" }}
-                      >
-                        Fee: {service.fee}
-                      </span>
-                      <span
-                        className="text-xs flex items-center gap-1"
-                        style={{ color: "var(--text-muted)" }}
-                      >
-                        <Clock size={11} /> {service.time}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <p className="text-sm leading-relaxed mb-5 flex-1" style={{ color: "var(--text-secondary)" }}>
-                  {service.desc}
-                </p>
-                <Link
-                  href={`/services/${service.id}`}
-                  className="flex items-center justify-center gap-2 h-10 rounded-full text-sm font-semibold border-2 transition-all hover:bg-[var(--primary-tint)] active:scale-[0.98]"
-                  style={{ borderColor: "var(--primary)", color: "var(--primary)" }}
-                >
-                  View & Apply <ChevronRight size={14} />
-                </Link>
-              </article>
+                <span>{cat.label}</span>
+              </button>
             );
           })}
         </div>
 
-        {filtered.length === 0 && (
-          <div className="text-center py-20">
-            <Search size={48} className="mx-auto mb-4" style={{ color: "var(--text-muted)" }} />
-            <h2 className="font-semibold text-lg mb-1" style={{ color: "var(--text)" }}>
-              No services found
+        {/* Results Count Strip */}
+        <div className="flex items-center justify-between mb-6">
+          <p className="text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-400">
+            Showing <strong className="text-slate-900 dark:text-white font-mono">{filteredServices.length}</strong> service
+            {filteredServices.length !== 1 ? "s" : ""}
+          </p>
+        </div>
+
+        {/* Loading State */}
+        {isLoading ? (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div
+                key={i}
+                className="rounded-2xl border border-slate-200 bg-white p-5 space-y-3 animate-pulse"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 bg-slate-200 rounded-xl" />
+                  <div className="space-y-1.5 flex-1">
+                    <div className="h-4 bg-slate-200 rounded w-3/4" />
+                    <div className="h-3 bg-slate-100 rounded w-1/2" />
+                  </div>
+                </div>
+                <div className="h-14 bg-slate-100 rounded-lg" />
+                <div className="h-9 bg-slate-200 rounded-lg" />
+              </div>
+            ))}
+          </div>
+        ) : filteredServices.length > 0 ? (
+          /* Services Grid */
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filteredServices.map((service) => (
+              <article
+                key={service.id}
+                className="flex flex-col justify-between rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-2xs hover:shadow-md hover:border-blue-400 dark:hover:border-blue-600 transition-all duration-200 group"
+              >
+                <div>
+                  <div className="flex items-start gap-3.5 mb-3">
+                    <div className="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 p-1 flex items-center justify-center shrink-0 overflow-hidden shadow-2xs group-hover:scale-105 transition-transform">
+                      {service.logo ? (
+                        <img
+                          src={service.logo}
+                          alt={service.name}
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = "none";
+                          }}
+                        />
+                      ) : (
+                        <FileText size={20} className="text-[#1e3a8a] dark:text-blue-400" />
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <h2 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white leading-snug line-clamp-2 group-hover:text-[#1e3a8a] transition-colors">
+                        {service.name}
+                      </h2>
+                      {service.nameTa && (
+                        <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 font-sans mt-0.5 line-clamp-1">
+                          {service.nameTa}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
+                          Fee: {service.fee}
+                        </span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1 font-medium">
+                          <Clock size={11} /> {service.time}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-4 line-clamp-3">
+                    {service.description || "Review eligibility criteria and proceed with online application."}
+                  </p>
+                </div>
+
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between gap-2 mt-2">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                    {service.category}
+                  </span>
+                  <Link
+                    href={`/user/apply?serviceId=${service.id}`}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#1e3a8a] hover:bg-[#1e40af] text-white text-xs font-bold transition-all active:scale-95 shadow-2xs"
+                  >
+                    <span>View &amp; Apply</span>
+                    <ArrowRight size={13} />
+                  </Link>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          /* Clean, standard Awaiting Catalogue State (No dummy services) */
+          <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 p-12 text-center max-w-lg mx-auto shadow-2xs">
+            <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-[#1e3a8a] dark:text-blue-400 border border-blue-200 dark:border-blue-800 flex items-center justify-center mx-auto mb-3">
+              <Layers size={22} />
+            </div>
+            <h2 className="text-base font-bold text-slate-900 dark:text-white">
+              Official Services Catalogue
             </h2>
-            <p style={{ color: "var(--text-muted)" }}>
-              Try a different search term or category.
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              Official department services and welfare board schemes will be published here upon departmental confirmation.
             </p>
+            <div className="mt-5 flex items-center justify-center gap-3">
+              <Link
+                href="/"
+                className="px-4 py-2 rounded-lg bg-[#1e3a8a] text-white text-xs font-bold hover:bg-[#1e40af] transition-colors"
+              >
+                Back to Home
+              </Link>
+              <Link
+                href="/track"
+                className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-50 transition-colors"
+              >
+                Track Application
+              </Link>
+            </div>
           </div>
         )}
       </div>

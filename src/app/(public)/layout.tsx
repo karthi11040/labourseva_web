@@ -1,5 +1,7 @@
 import Header from "@/components/Header";
+import ReceiptHeader from "@/components/ReceiptHeader";
 import Footer from "@/components/Footer";
+import PublicBreadcrumbs from "@/components/PublicBreadcrumbs";
 
 export default function PublicLayout({
   children,
@@ -9,7 +11,9 @@ export default function PublicLayout({
   return (
     <>
       <Header />
-      <main id="main-content" tabIndex={-1} className="outline-none">
+      <ReceiptHeader />
+      <PublicBreadcrumbs />
+      <main id="main-content" tabIndex={-1} className="outline-none" suppressHydrationWarning>
         {children}
       </main>
       <Footer />

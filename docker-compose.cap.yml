@@ -1,0 +1,68 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# LabourSeva — Dedicated Cap CAPTCHA Self-Hosted Cluster
+# Official Repository: https://github.com/tiagozip/cap
+#
+# Usage:
+#   docker compose -f docker-compose.cap.yml up -d
+#
+# Requirements:
+#   - Docker Engine 24+ & Docker Compose v2+
+#   - Exposes Port 3002 for CAPTCHA challenge delivery & /siteverify
+# ─────────────────────────────────────────────────────────────────────────────
+
+version: "3.8"
+
+networks:
+  cap-network:
+    driver: bridge
+
+volumes:
+  cap-valkey-data:
+
+services:
+  # 1. Valkey (In-Memory Datastore for Proof-of-Work State & Challenge Cache)
+  cap-valkey:
+    image: valkey/valkey:9-alpine
+    container_name: labourseva-cap-valkey
+    restart: unless-stopped
+    command: ["valkey-server", "--save", "60", "1", "--loglevel", "warning"]
+    volumes:
+      - cap-valkey-data:/data
+    networks:
+      - cap-network
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # 2. Cap Dedicated CAPTCHA Server
+  cap-service:
+    image: tiago2/cap:latest
+    container_name: labourseva-cap-service
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    environment:
+      # Network & Port binding
+      - PORT=3002
+      - HOST=0.0.0.0
+      # Valkey internal connection string
+      - VALKEY_URI=redis://cap-valkey:6379
+      # Allowed Origins for CORS protection
+      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001,https://labourseva.com,https://www.labourseva.com
+      # Rate Limiting & Difficulty configuration
+      - RATE_LIMIT_PER_MINUTE=120
+      - POW_DIFFICULTY=standard
+      # Cap Admin management key (set securely in production)
+      - ADMIN_API_KEY=${CAP_ADMIN_API_KEY:-cap_admin_change_in_production_secret}
+    depends_on:
+      cap-valkey:
+        condition: service_healthy
+    networks:
+      - cap-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3002/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3

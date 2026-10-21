@@ -138,6 +138,9 @@ export default function TrackPage() {
             className="rounded-[var(--radius-lg)] border shadow-[var(--shadow-sm)] overflow-hidden"
             style={{ background: "var(--surface)", borderColor: "var(--border)" }}
           >
+            {/* Official Letterhead / Receipt Header */}
+
+
             {/* Header */}
             <div className="p-5 border-b" style={{ borderColor: "var(--border)", background: "var(--bg-subtle)" }}>
               <div className="flex items-start justify-between gap-4">

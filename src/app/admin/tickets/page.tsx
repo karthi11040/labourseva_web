@@ -419,19 +419,19 @@ export default function AdminTicketsPage() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto w-full scrollbar-thin">
+            <table className="w-full min-w-[1050px] text-sm">
               <thead>
                 <tr className="bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-600">
-                  <th className="text-left px-4 py-3 font-bold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wide">Ticket</th>
-                  <th className="text-left px-4 py-3 font-bold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wide">Subject</th>
-                  <th className="text-left px-4 py-3 font-bold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wide">Citizen</th>
-                  <th className="text-left px-4 py-3 font-bold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wide">Priority</th>
-                  <th className="text-left px-4 py-3 font-bold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wide">Status</th>
-                  <th className="text-left px-4 py-3 font-bold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wide">Assigned To</th>
-                  <th className="text-left px-4 py-3 font-bold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wide">Messages</th>
-                  <th className="text-left px-4 py-3 font-bold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wide">Created</th>
-                  <th className="px-4 py-3"></th>
+                  <th className="text-left px-4 py-3 font-bold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wide whitespace-nowrap">Ticket</th>
+                  <th className="text-left px-4 py-3 font-bold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wide whitespace-nowrap">Subject</th>
+                  <th className="text-left px-4 py-3 font-bold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wide whitespace-nowrap">Citizen</th>
+                  <th className="text-left px-4 py-3 font-bold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wide whitespace-nowrap">Priority</th>
+                  <th className="text-left px-4 py-3 font-bold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wide whitespace-nowrap">Status</th>
+                  <th className="text-left px-4 py-3 font-bold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wide whitespace-nowrap">Assigned To</th>
+                  <th className="text-left px-4 py-3 font-bold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wide whitespace-nowrap">Messages</th>
+                  <th className="text-left px-4 py-3 font-bold text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wide whitespace-nowrap">Created</th>
+                  <th className="px-4 py-3 text-right whitespace-nowrap min-w-[60px]"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -441,32 +441,32 @@ export default function AdminTicketsPage() {
                     className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors cursor-pointer"
                     onClick={() => openTicketDetail(ticket.id)}
                   >
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       <span className="font-mono text-xs font-bold text-[#1e3a8a] dark:text-blue-400">
                         {ticket.reference_no}
                       </span>
                     </td>
-                    <td className="px-4 py-3 max-w-[250px]">
-                      <p className="font-semibold text-slate-900 dark:text-white truncate">{ticket.subject}</p>
+                    <td className="px-4 py-3 max-w-[260px]">
+                      <p className="font-semibold text-slate-900 dark:text-white truncate block" title={ticket.subject}>{ticket.subject}</p>
                       {ticket.category && (
-                        <span className="text-xs text-slate-500 dark:text-slate-400">{ticket.category}</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 truncate block">{ticket.category}</span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       <p className="text-slate-900 dark:text-white font-medium text-xs">{ticket.contact_name || "—"}</p>
                       <p className="text-xs text-slate-500 dark:text-slate-400">{ticket.contact_phone || ""}</p>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border ${PRIORITY_COLORS[ticket.priority] || PRIORITY_COLORS.NORMAL}`}>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span className={`shrink-0 whitespace-nowrap inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border ${PRIORITY_COLORS[ticket.priority] || PRIORITY_COLORS.NORMAL}`}>
                         {ticket.priority}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold ${STATUS_COLORS[ticket.status] || STATUS_COLORS.OPEN}`}>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span className={`shrink-0 whitespace-nowrap inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold ${STATUS_COLORS[ticket.status] || STATUS_COLORS.OPEN}`}>
                         {ticket.status.replace(/_/g, " ")}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       {ticket.assigned_employee_name ? (
                         <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
                           {ticket.assigned_employee_name}
@@ -475,22 +475,22 @@ export default function AdminTicketsPage() {
                         <span className="text-xs text-slate-400 dark:text-slate-500 italic">Unassigned</span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 dark:text-slate-400">
-                        <MessageSquare size={12} />
-                        {ticket.message_count}
+                        <MessageSquare size={12} className="shrink-0" />
+                        <span>{ticket.message_count}</span>
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
+                    <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
                       {formatTimeAgo(ticket.created_at)}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 text-right whitespace-nowrap min-w-[60px]">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           openTicketDetail(ticket.id);
                         }}
-                        className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-400 hover:text-[#1e3a8a] dark:hover:text-blue-400"
+                        className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-400 hover:text-[#1e3a8a] dark:hover:text-blue-400 shrink-0 inline-flex"
                       >
                         <Eye size={16} />
                       </button>

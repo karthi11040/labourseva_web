@@ -1,307 +1,246 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { Phone, ArrowRight, Shield, RefreshCw, AlertCircle } from "lucide-react";
-
-type Step = "phone" | "otp" | "done";
-
+import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
+import LoginAdPanel from "@/components/ads/LoginAdPanel";
+import {
+  User,
+  Lock,
+  Eye,
+  EyeOff,
+  ArrowRight,
+  Shield,
+  AlertCircle,
+  Clock,
+  Loader2,
+  Mail,
+  KeyRound,
+} from "lucide-react";
 export default function LoginPage() {
-  const [step, setStep] = useState<Step>("phone");
-  const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const router = useRouter();
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [countdown, setCountdown] = useState(0);
-  const [phoneError, setPhoneError] = useState("");
+  const [error, setError] = useState("");
+  const [accountStatus, setAccountStatus] = useState<string | null>(null);
 
-  function validatePhone(v: string) {
-    if (!/^[6-9]\d{9}$/.test(v)) return "Enter a valid 10-digit mobile number";
-    return "";
-  }
-
-  async function handleSendOtp(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    const err = validatePhone(phone);
-    if (err) { setPhoneError(err); return; }
-    setPhoneError("");
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 1000)); // demo delay
-    setLoading(false);
-    setStep("otp");
-    startCountdown();
-  }
+    setError("");
+    setAccountStatus(null);
 
-  function startCountdown() {
-    setCountdown(45);
-    const id = setInterval(() => {
-      setCountdown((c) => {
-        if (c <= 1) { clearInterval(id); return 0; }
-        return c - 1;
+    if (!identifier || !password) {
+      setError("Please enter your registered email/phone and password.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier, password, rememberMe }),
       });
-    }, 1000);
-  }
 
-  function handleOtpChange(idx: number, val: string) {
-    if (!/^\d?$/.test(val)) return;
-    const next = [...otp];
-    next[idx] = val;
-    setOtp(next);
-    if (val && idx < 5) {
-      document.getElementById(`otp-${idx + 1}`)?.focus();
+      const data = await res.json();
+
+      if (res.ok && data.ok) {
+        // Successful login
+        const targetUrl = data.redirectUrl || "/user/dashboard";
+        router.push(targetUrl);
+        return;
+      }
+
+      if (res.status === 403) {
+        setAccountStatus(data.accountStatus || "BLOCKED");
+        setError(data.error || "Access restricted by administrative policy.");
+      } else if (res.status === 429) {
+        setError(data.error || "Too many failed login attempts. Please wait a few minutes before retrying.");
+      } else {
+        setError(data.error || "Invalid login credentials. Please check your details and try again.");
+      }
+    } catch {
+      setError("Unable to connect to authentication server. Please check your network.");
+    } finally {
+      setLoading(false);
     }
-  }
-
-  function handleOtpKeyDown(idx: number, e: React.KeyboardEvent) {
-    if (e.key === "Backspace" && !otp[idx] && idx > 0) {
-      document.getElementById(`otp-${idx - 1}`)?.focus();
-    }
-  }
-
-  async function handleVerifyOtp(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setLoading(false);
-    setStep("done");
   }
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center px-4 py-12"
-      style={{ background: "var(--bg-subtle)" }}
-    >
-      <div className="w-full max-w-md">
-        {/* Card */}
-        <div
-          className="rounded-[var(--radius-lg)] border shadow-[var(--shadow-lg)] p-8"
-          style={{ background: "var(--surface)", borderColor: "var(--border)" }}
-        >
-          {/* Logo */}
-          <div className="text-center mb-8">
-            <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg mx-auto mb-3"
-              style={{ background: "var(--primary)" }}
-            >
+    <div className="min-h-[calc(100vh-12rem)] flex items-center justify-center px-4 py-12" style={{ background: "var(--bg-subtle)" }}>
+      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] overflow-hidden rounded-2xl border bg-white shadow-[var(--shadow-lg)]" style={{ borderColor: "var(--border)" }}>
+        <LoginAdPanel placement="CUSTOMER_LOGIN" audience="Customer" />
+        <div className="w-full max-w-md mx-auto">
+        <div className="rounded-2xl border p-6 sm:p-8 shadow-[var(--shadow-lg)]" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+          
+          {/* Header */}
+          <div className="text-center mb-6">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg mx-auto mb-3" style={{ background: "var(--primary)" }}>
               LS
             </div>
-            <h1 className="text-2xl font-bold" style={{ color: "var(--text)" }}>
-              {step === "phone" ? "Sign in to LabourSeva" : step === "otp" ? "Enter OTP" : "Signed in!"}
+            <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text)" }}>
+              Sign In to LabourSeva
             </h1>
-            <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
-              {step === "phone"
-                ? "Enter your registered mobile number"
-                : step === "otp"
-                ? `OTP sent to +91 ${phone.slice(0, 2)}XXXXXX${phone.slice(-2)}`
-                : "Welcome back to LabourSeva"}
+            <p className="text-xs text-slate-500 mt-1">
+              Government of Tamil Nadu · Department of Labour
             </p>
           </div>
 
-          {/* Phone step */}
-          {step === "phone" && (
-            <form onSubmit={handleSendOtp} noValidate>
-              <div className="mb-5">
-                <label
-                  htmlFor="phone"
-                  className="block text-sm font-medium mb-1.5"
-                  style={{ color: "var(--text)" }}
-                >
-                  Mobile number <span style={{ color: "var(--text-muted)" }}>(required)</span>
-                </label>
-                <div
-                  className="flex items-center border rounded-[var(--radius-sm)] overflow-hidden transition-all"
-                  style={{
-                    borderColor: phoneError ? "var(--danger)" : "var(--border-strong)",
-                    background: "var(--surface)",
-                  }}
-                >
-                  <div
-                    className="flex items-center gap-2 px-3 border-r h-12 flex-shrink-0"
-                    style={{ borderColor: "var(--border)", background: "var(--bg-subtle)" }}
-                  >
-                    <Phone size={14} style={{ color: "var(--text-muted)" }} />
-                    <span className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
-                      +91
-                    </span>
-                  </div>
-                  <input
-                    id="phone"
-                    type="tel"
-                    inputMode="tel"
-                    autoComplete="tel-national"
-                    value={phone}
-                    onChange={(e) => {
-                      setPhone(e.target.value.replace(/\D/g, "").slice(0, 10));
-                      if (phoneError) setPhoneError("");
-                    }}
-                    placeholder="98XXXXXXXX"
-                    className="flex-1 px-3 h-12 text-sm outline-none bg-transparent"
-                    style={{ color: "var(--text)" }}
-                    aria-invalid={!!phoneError}
-                    aria-describedby={phoneError ? "phone-error" : undefined}
-                    required
-                  />
-                </div>
-                {phoneError && (
-                  <p
-                    id="phone-error"
-                    role="alert"
-                    className="flex items-center gap-1.5 mt-1.5 text-xs"
-                    style={{ color: "var(--danger-text)" }}
-                  >
-                    <AlertCircle size={12} /> {phoneError}
-                  </p>
-                )}
-                <p className="mt-1.5 text-xs" style={{ color: "var(--text-muted)" }}>
-                  An OTP will be sent to this number for verification.
-                </p>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading || phone.length !== 10}
-                className="w-full h-12 rounded-full font-semibold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-[var(--shadow-primary)] active:scale-[0.98]"
-                style={{ background: "var(--primary)", color: "var(--on-primary)" }}
-                aria-busy={loading}
-              >
-                {loading ? (
-                  <>
-                    <span className="spinner spinner-sm" aria-hidden="true" />
-                    Sending OTP...
-                  </>
-                ) : (
-                  <>
-                    Send OTP <ArrowRight size={16} />
-                  </>
-                )}
-              </button>
-            </form>
-          )}
-
-          {/* OTP step */}
-          {step === "otp" && (
-            <form onSubmit={handleVerifyOtp}>
-              <div className="mb-6">
-                <div className="flex gap-2 justify-center mb-4" aria-label="OTP input">
-                  {otp.map((digit, i) => (
-                    <input
-                      key={i}
-                      id={`otp-${i}`}
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete={i === 0 ? "one-time-code" : "off"}
-                      value={digit}
-                      maxLength={1}
-                      onChange={(e) => handleOtpChange(i, e.target.value)}
-                      onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                      className="w-12 h-14 text-center text-2xl font-bold border rounded-[var(--radius-sm)] outline-none transition-all"
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        background: "var(--bg-subtle)",
-                        borderColor: digit ? "var(--primary)" : "var(--border-strong)",
-                        color: "var(--text)",
-                      }}
-                    />
-                  ))}
-                </div>
-
-                <div className="text-center">
-                  {countdown > 0 ? (
-                    <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-                      Resend in{" "}
-                      <span className="font-medium" style={{ fontFamily: "var(--font-mono)" }}>
-                        0:{String(countdown).padStart(2, "0")}
-                      </span>
-                    </p>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => { setOtp(["","","","","",""]); startCountdown(); }}
-                      className="text-sm font-medium flex items-center gap-1 mx-auto transition-colors hover:opacity-80"
-                      style={{ color: "var(--primary)" }}
+          {error && (
+            <div className={`mb-5 p-3.5 rounded-xl border text-xs flex items-start gap-2.5 ${
+              accountStatus === "EMAIL_UNVERIFIED"
+                ? "bg-amber-50 border-amber-200 text-amber-900"
+                : accountStatus === "REJECTED"
+                ? "bg-rose-50 border-rose-200 text-rose-900"
+                : "bg-rose-50 border-rose-200 text-rose-800"
+            }`}>
+              {accountStatus === "EMAIL_UNVERIFIED" ? (
+                <Clock size={16} className="text-amber-600 shrink-0 mt-0.5" />
+              ) : (
+                <AlertCircle size={16} className="text-rose-600 shrink-0 mt-0.5" />
+              )}
+              <div className="flex-1">
+                <p className="font-medium leading-relaxed">{error}</p>
+                {accountStatus === "EMAIL_UNVERIFIED" && (
+                  <div className="mt-2 pt-2 border-t border-amber-200">
+                    <Link
+                      href="/verify-email"
+                      className="inline-flex items-center gap-1 font-bold text-amber-950 underline hover:no-underline"
                     >
-                      <RefreshCw size={13} /> Resend OTP
-                    </button>
-                  )}
-                </div>
-
-                <p className="text-center text-xs mt-2" style={{ color: "var(--text-muted)" }}>
-                  OTP is valid for 5 minutes.
-                </p>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading || otp.join("").length < 6}
-                className="w-full h-12 rounded-full font-semibold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-[var(--shadow-primary)] active:scale-[0.98]"
-                style={{ background: "var(--primary)", color: "var(--on-primary)" }}
-                aria-busy={loading}
-              >
-                {loading ? (
-                  <><span className="spinner spinner-sm" aria-hidden="true" /> Verifying...</>
-                ) : (
-                  <>Verify & Sign in <ArrowRight size={16} /></>
+                      <Mail size={12} /> Request a new verification link →
+                    </Link>
+                  </div>
                 )}
-              </button>
-
-              <button
-                type="button"
-                className="w-full mt-3 h-10 rounded-full text-sm font-medium transition-colors hover:bg-[var(--bg-subtle)]"
-                style={{ color: "var(--text-secondary)" }}
-                onClick={() => setStep("phone")}
-              >
-                ← Change number
-              </button>
-            </form>
-          )}
-
-          {/* Done */}
-          {step === "done" && (
-            <div className="text-center">
-              <div
-                className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
-                style={{ background: "var(--success-bg)" }}
-              >
-                <Shield size={28} style={{ color: "var(--success)" }} />
               </div>
-              <p className="mb-6 text-sm" style={{ color: "var(--text-secondary)" }}>
-                This is a demonstration. In production, you would be redirected to your dashboard.
-              </p>
-              <Link
-                href="/"
-                className="inline-flex items-center gap-2 h-12 px-8 rounded-full font-semibold text-sm transition-all hover:shadow-[var(--shadow-primary)]"
-                style={{ background: "var(--primary)", color: "var(--on-primary)" }}
-              >
-                Go to Homepage
-              </Link>
             </div>
           )}
 
-          {step === "phone" && (
-            <>
-              <div className="my-6 flex items-center gap-3">
-                <div className="flex-1 h-px" style={{ background: "var(--border)" }} />
-                <span className="text-xs" style={{ color: "var(--text-muted)" }}>or</span>
-                <div className="flex-1 h-px" style={{ background: "var(--border)" }} />
+          <form onSubmit={handleLogin} className="space-y-4">
+            {/* Login Identifier */}
+            <div>
+              <label htmlFor="login-id" className="block text-xs font-medium text-slate-700 mb-1">
+                Email Address or 10-Digit Mobile Number <span className="text-rose-500">*</span>
+              </label>
+              <div className="flex items-center border rounded-lg overflow-hidden bg-slate-50 focus-within:bg-white focus-within:border-[#1e3a8a] transition-all" style={{ borderColor: "var(--border-strong)" }}>
+                <div className="px-3 text-slate-400">
+                  <User size={15} />
+                </div>
+                <input
+                  id="login-id"
+                  type="text"
+                  autoComplete="username"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder="name@example.com or 98XXXXXXXX"
+                  className="flex-1 px-2 h-11 text-xs outline-none bg-transparent"
+                  style={{ color: "var(--text)" }}
+                  required
+                />
               </div>
-              <p className="text-center text-sm" style={{ color: "var(--text-secondary)" }}>
-                New to LabourSeva?{" "}
+            </div>
+
+            {/* Password */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label htmlFor="login-pwd" className="text-xs font-medium text-slate-700">
+                  Password <span className="text-rose-500">*</span>
+                </label>
                 <Link
-                  href="/register"
-                  className="font-semibold underline hover:no-underline"
-                  style={{ color: "var(--primary)" }}
+                  href="/forgot-password"
+                  className="text-xs text-[#1e3a8a] font-medium hover:underline"
                 >
+                  Forgot password?
+                </Link>
+              </div>
+              <div className="flex items-center border rounded-lg overflow-hidden bg-slate-50 focus-within:bg-white focus-within:border-[#1e3a8a] transition-all" style={{ borderColor: "var(--border-strong)" }}>
+                <div className="px-3 text-slate-400">
+                  <Lock size={15} />
+                </div>
+                <input
+                  id="login-pwd"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="flex-1 px-2 h-11 text-xs outline-none bg-transparent"
+                  style={{ color: "var(--text)" }}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="px-3 text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+            </div>
+
+            {/* Remember Me */}
+            <div className="flex items-center justify-between pt-1">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-3.5 h-3.5 rounded border-slate-300 text-[#1e3a8a] focus:ring-[#1e3a8a]"
+                />
+                <span className="text-xs text-slate-600">Keep me signed in</span>
+              </label>
+            </div>
+
+
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loading || !identifier || !password}
+              className="w-full h-12 rounded-full font-semibold text-sm flex items-center justify-center gap-2 text-white bg-[#1e3a8a] hover:bg-[#1e40af] disabled:opacity-50 transition-all shadow-sm mt-3"
+            >
+              {loading ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" /> Verifying Credentials...
+                </>
+              ) : (
+                <>
+                  Sign In <ArrowRight size={16} />
+                </>
+              )}
+            </button>
+
+            <Link
+              href="/user/login"
+              className="min-h-11 w-full inline-flex items-center justify-center gap-2 rounded-lg border border-[#1e3a8a] bg-white px-4 py-2 text-sm font-semibold text-[#1e3a8a] transition-colors hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-orange-200"
+            >
+              <KeyRound size={15} />
+              Sign in with mobile OTP
+            </Link>
+            <p className="-mt-2 text-center text-xs text-slate-500">
+              New phone numbers can create an account after verifying the OTP.
+            </p>
+
+            {/* Register Footer */}
+            <div className="pt-4 border-t border-slate-100 text-center">
+              <p className="text-xs text-slate-500">
+                New to LabourSeva?{" "}
+                <Link href="/register" className="text-[#1e3a8a] font-bold underline hover:no-underline">
                   Create an account
                 </Link>
               </p>
-            </>
-          )}
+            </div>
+          </form>
+
         </div>
 
-        {/* Trust note */}
-        <p className="text-center text-xs mt-4 flex items-center justify-center gap-1" style={{ color: "var(--text-muted)" }}>
+        <p className="text-center text-xs mt-4 flex items-center justify-center gap-1 text-slate-400">
           <Shield size={12} />
-          Secured with 256-bit encryption. Your data is protected.
+          Protected by Tamil Nadu e-Governance Authentication Standard
         </p>
+        </div>
       </div>
     </div>
   );

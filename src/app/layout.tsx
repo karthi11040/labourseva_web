@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import { Noto_Sans, Noto_Sans_Tamil, Noto_Sans_Mono } from "next/font/google";
+import Script from "next/script";
+import { Inter, Noto_Sans_Tamil, Noto_Sans_Mono } from "next/font/google";
 import "./globals.css";
+import LanguageProvider from "@/components/LanguageProvider";
 
-const notoSans = Noto_Sans({
-  subsets: ["latin", "latin-ext"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-noto-sans",
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
   display: "swap",
 });
 
@@ -45,22 +46,23 @@ export default function RootLayout({
     <html
       lang="en"
       data-theme="light"
-      className={`${notoSans.variable} ${notoSansTamil.variable} ${notoSansMono.variable}`}
+      suppressHydrationWarning
+      className={`${inter.variable} ${notoSansTamil.variable} ${notoSansMono.variable}`}
     >
       <head>
-        <style>{`
-          :root {
-            --font-sans: var(--font-noto-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
-            --font-sans-ta: var(--font-noto-tamil), var(--font-noto-sans), system-ui, sans-serif;
-            --font-mono: var(--font-noto-mono), ui-monospace, Menlo, Consolas, monospace;
-          }
-        `}</style>
+        <Script
+          id="google-adsense"
+          async
+          strategy="afterInteractive"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3642883735997037"
+          crossOrigin="anonymous"
+        />
       </head>
-      <body style={{ fontFamily: "var(--font-sans)" }}>
+      <body style={{ fontFamily: "var(--font-sans)" }} suppressHydrationWarning>
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>
-        {children}
+        <LanguageProvider>{children}</LanguageProvider>
       </body>
     </html>
   );

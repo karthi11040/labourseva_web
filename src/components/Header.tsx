@@ -1,313 +1,231 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import Image from "next/image";
+import { useLanguage } from "@/components/LanguageProvider";
 import {
+  CalendarDays,
+  Contrast,
+  Globe,
+  Search,
+  UserRound,
   Menu,
   X,
-  Search,
-  Globe,
-  Sun,
-  Moon,
-  Monitor,
-  ChevronDown,
-  UserRound,
-  LogOut,
-  Bell,
-  Shield,
 } from "lucide-react";
 
 const navLinks = [
-  { label: "Home", href: "/" },
-  { label: "Services", href: "/services" },
-  { label: "Schemes", href: "/schemes" },
-  { label: "Downloads", href: "/downloads" },
-  { label: "About Us", href: "/about" },
-  { label: "Help", href: "/help" },
+  { label: "Home", labelTa: "முகப்பு", href: "/" },
+  { label: "Services", labelTa: "சேவைகள்", href: "/services" },
+  { label: "Marketplace", labelTa: "சந்தை", href: "/marketplace" },
+  { label: "Schemes", labelTa: "திட்டங்கள்", href: "/schemes" },
+  { label: "Downloads", labelTa: "பதிவிறக்கங்கள்", href: "/downloads" },
+  { label: "About Us", labelTa: "எங்களை பற்றி", href: "/about" },
+  { label: "Help", labelTa: "உதவி", href: "/help" },
 ];
 
-type Theme = "light" | "dark" | "system";
-
 export default function Header() {
+  const pathname = usePathname();
+  const { language: lang, setLanguage } = useLanguage();
+  const [highContrast, setHighContrast] = useState(false);
+  const [dateTime, setDateTime] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const [theme, setTheme] = useState<Theme>("light");
-  const [themeOpen, setThemeOpen] = useState(false);
-  const [lang, setLang] = useState<"en" | "ta">("en");
-  const [currentTime, setCurrentTime] = useState("");
 
   useEffect(() => {
-    const updateTime = () => {
-      setCurrentTime(
-        new Date().toLocaleString("en-IN", {
-          dateStyle: "medium",
-          timeStyle: "short",
-          timeZone: "Asia/Kolkata",
-        })
-      );
+    const savedContrast = document.cookie.match(/(?:^|; )labourseva-contrast=(high|normal)/)?.[1];
+    const contrast = savedContrast ?? document.documentElement.dataset.contrast ?? "normal";
+    setHighContrast(contrast === "high");
+    document.documentElement.dataset.contrast = contrast;
+
+    const updateDateTime = () => {
+      const date = new Date().toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+        timeZone: "Asia/Kolkata",
+      });
+      const time = new Date().toLocaleTimeString("en-IN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: "Asia/Kolkata",
+      });
+      setDateTime(`${date} at ${time} IST`);
     };
-    updateTime();
-    const id = setInterval(updateTime, 60000);
-    return () => clearInterval(id);
+
+    updateDateTime();
+    const timer = window.setInterval(updateDateTime, 60_000);
+    return () => window.clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  function changeLanguage(next: "en" | "ta") {
+    setLanguage(next);
+  }
 
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme === "system" ? "system" : theme);
-  }, [theme]);
+  function toggleContrast() {
+    const next = highContrast ? "normal" : "high";
+    setHighContrast(!highContrast);
+    document.documentElement.dataset.contrast = next;
+    document.cookie = `labourseva-contrast=${next}; path=/; max-age=31536000; samesite=lax`;
+  }
 
-  useEffect(() => {
-    document.documentElement.lang = lang;
-  }, [lang]);
-
-  const themeIcons: Record<Theme, React.ReactNode> = {
-    light: <Sun size={16} />,
-    dark: <Moon size={16} />,
-    system: <Monitor size={16} />,
-  };
+  function changeFontSize(amount: number) {
+    const root = document.documentElement;
+    const current = Number.parseFloat(getComputedStyle(root).fontSize) || 16;
+    root.style.fontSize = `${Math.min(20, Math.max(14, current + amount))}px`;
+  }
 
   return (
-    <>
-      {/* Info bar */}
-      <div className="bg-[#0C0A09] text-white text-xs px-4 py-1.5 hidden sm:block">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          <p className="text-gray-300">
-            தொழிலாளர் நல சேவைகள் — Labour Welfare Services Portal
+    <header className="ls-header">
+      {/* Top utility bar */}
+      <div className="ls-topbar">
+        <div className="ls-header-container ls-topbar-inner">
+          <p className="ls-topbar-message">
+            ஜெய் ஜெகன் நாத்
           </p>
-          <div className="flex items-center gap-4 text-gray-300">
-            <span>{currentTime}</span>
+          <div className="ls-utilities">
+            <div className="ls-font-controls" aria-label="Font size controls">
+              <button
+                type="button"
+                onClick={() => changeFontSize(-1)}
+                aria-label="Decrease text size"
+              >
+                A−
+              </button>
+              <button
+                type="button"
+                onClick={() => changeFontSize(1)}
+                aria-label="Increase text size"
+              >
+                A+
+              </button>
+            </div>
+            <span className="ls-utility-divider" aria-hidden="true" />
             <button
-              className="flex items-center gap-1 hover:text-white transition-colors"
-              aria-label="Increase font size"
-              onClick={() => {
-                const html = document.documentElement;
-                const current = parseFloat(getComputedStyle(html).fontSize);
-                html.style.fontSize = Math.min(current + 1, 20) + "px";
-              }}
+              type="button"
+              className="ls-utility-button ls-contrast-button"
+              onClick={toggleContrast}
+              aria-pressed={highContrast}
             >
-              A+
+              <Contrast size={16} aria-hidden="true" /> Contrast
             </button>
-            <button
-              className="flex items-center gap-1 hover:text-white transition-colors"
-              aria-label="Decrease font size"
-              onClick={() => {
-                const html = document.documentElement;
-                const current = parseFloat(getComputedStyle(html).fontSize);
-                html.style.fontSize = Math.max(current - 1, 14) + "px";
-              }}
-            >
-              A-
-            </button>
+            <span className="ls-utility-divider" aria-hidden="true" />
+            <div className="ls-language-controls" aria-label="Language">
+              <Globe size={15} aria-hidden="true" />
+              <button
+                type="button"
+                aria-pressed={lang === "en"}
+                className={lang === "en" ? "is-selected" : ""}
+                onClick={() => changeLanguage("en")}
+              >
+                English
+              </button>
+              <span aria-hidden="true">/</span>
+              <button
+                type="button"
+                aria-pressed={lang === "ta"}
+                className={lang === "ta" ? "is-selected" : ""}
+                onClick={() => changeLanguage("ta")}
+              >
+                தமிழ்
+              </button>
+            </div>
+            <span className="ls-utility-divider" aria-hidden="true" />
+            <div className="ls-date-time">
+              <CalendarDays size={15} aria-hidden="true" />
+              <span>{dateTime || "Tamil Nadu, India"}</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Main header */}
-      <header
-        className={`sticky top-0 z-50 bg-[var(--surface)] transition-shadow duration-200 ${
-          scrolled ? "shadow-md" : "border-b border-[var(--border)]"
-        }`}
-        role="banner"
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 gap-4">
-            {/* Logo */}
-            <Link
-              href="/"
-              className="flex items-center gap-2.5 flex-shrink-0 focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] rounded-sm"
-            >
-              <div
-                className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-                style={{ background: "var(--primary)" }}
-                aria-hidden="true"
-              >
-                LS
-              </div>
-              <div>
-                <div
-                  className="font-bold text-base leading-tight"
-                  style={{ color: "var(--primary)" }}
-                >
-                  LabourSeva
-                </div>
-                <div
-                  className="text-[10px] leading-tight hidden sm:block"
-                  style={{ color: "var(--text-muted)", fontFamily: "var(--font-sans-ta)" }}
-                >
-                  தொழிலாளர் நல சேவைகள்
-                </div>
-              </div>
-            </Link>
+      {/* Main navigation header */}
+      <div className="ls-nav-shell">
+        <div className="ls-header-container ls-nav-inner">
+          <Link href="/" className="ls-brand" aria-label="LabourSeva Home">
+            <Image src="/images/Logo.webp" alt="LabourSeva logo" width={34} height={34} className="ls-brand-logo" priority />
+            <span className="ls-brand-copy">
+              <span className="ls-brand-name">
+                Labour<span>Seva</span>
+              </span>
+              <span className="ls-brand-accent" aria-hidden="true" />
+              <span className="ls-brand-tamil">
+                தொழிலாளர் நல சேவைகள்
+              </span>
+            </span>
+          </Link>
 
-            {/* Desktop nav */}
-            <nav
-              className="hidden lg:flex items-center gap-1"
-              aria-label="Main navigation"
-            >
-              {navLinks.map((link) => (
+          <nav className="ls-desktop-nav" aria-label="Main navigation">
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href;
+              return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="px-3 py-2 rounded-md text-sm font-medium transition-colors duration-150 hover:bg-[var(--primary-tint)] hover:text-[var(--primary)]"
-                  style={{ color: "var(--text-secondary)" }}
+                  className={`ls-nav-link ${isActive ? "is-active" : ""}`}
+                  aria-current={isActive ? "page" : undefined}
                 >
-                  {link.label}
+                  {lang === "ta" ? link.labelTa : link.label}
                 </Link>
-              ))}
-            </nav>
+              );
+            })}
+          </nav>
 
-            {/* Right controls */}
-            <div className="flex items-center gap-2">
-              {/* Search */}
-              <button
-                className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[var(--bg-subtle)] transition-colors"
-                aria-label="Search"
-              >
-                <Search size={18} style={{ color: "var(--text-secondary)" }} />
-              </button>
+          <div className="ls-nav-actions">
+            <Link
+              href="/services"
+              className="ls-search-button"
+              aria-label="Search services"
+              title="Search services"
+            >
+              <Search size={19} />
+            </Link>
 
-              {/* Language toggle */}
-              <button
-                onClick={() => setLang(lang === "en" ? "ta" : "en")}
-                className="hidden sm:flex items-center gap-1 px-3 h-8 rounded-full border text-xs font-medium transition-colors hover:bg-[var(--primary-tint)] hover:border-[var(--primary)] hover:text-[var(--primary)]"
-                style={{
-                  borderColor: "var(--border-strong)",
-                  color: "var(--text-secondary)",
-                }}
-                aria-label="Language switcher"
-              >
-                <Globe size={14} />
-                <span>{lang === "en" ? "EN" : "தமிழ்"}</span>
-              </button>
+            <Link href="/login" className="ls-signin-button">
+              <UserRound size={17} />
+              <span>{lang === "ta" ? "உள்நுழைக" : "Sign in"}</span>
+            </Link>
 
-              {/* Theme toggle */}
-              <div className="relative hidden sm:block">
-                <button
-                  onClick={() => setThemeOpen(!themeOpen)}
-                  className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[var(--bg-subtle)] transition-colors"
-                  aria-label="Theme selector"
-                  aria-expanded={themeOpen}
-                  aria-haspopup="listbox"
-                >
-                  <span style={{ color: "var(--text-secondary)" }}>
-                    {themeIcons[theme]}
-                  </span>
-                </button>
-                {themeOpen && (
-                  <div
-                    className="absolute right-0 mt-2 w-36 rounded-[var(--radius-md)] border shadow-[var(--shadow-md)] overflow-hidden z-50"
-                    style={{
-                      background: "var(--surface)",
-                      borderColor: "var(--border)",
-                    }}
-                    role="listbox"
-                    aria-label="Theme options"
-                  >
-                    {(["light", "dark", "system"] as Theme[]).map((t) => (
-                      <button
-                        key={t}
-                        role="option"
-                        aria-selected={theme === t}
-                        onClick={() => {
-                          setTheme(t);
-                          setThemeOpen(false);
-                        }}
-                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm transition-colors ${
-                          theme === t
-                            ? "bg-[var(--primary-tint)] text-[var(--primary)] font-medium"
-                            : "hover:bg-[var(--bg-subtle)]"
-                        }`}
-                        style={{ color: theme === t ? "var(--primary)" : "var(--text)" }}
-                      >
-                        {themeIcons[t]}
-                        <span className="capitalize">{t}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Sign in */}
-              <Link
-                href="/login"
-                className="hidden sm:flex items-center gap-1.5 h-9 px-4 rounded-full text-sm font-medium transition-all duration-150 hover:shadow-[var(--shadow-primary)] active:scale-[0.98]"
-                style={{
-                  background: "var(--primary)",
-                  color: "var(--on-primary)",
-                }}
-              >
-                <UserRound size={16} />
-                Sign in
-              </Link>
-
-              {/* Mobile hamburger */}
-              <button
-                className="lg:hidden w-9 h-9 flex items-center justify-center rounded-full hover:bg-[var(--bg-subtle)] transition-colors"
-                onClick={() => setMenuOpen(!menuOpen)}
-                aria-label={menuOpen ? "Close menu" : "Open menu"}
-                aria-expanded={menuOpen}
-                aria-controls="mobile-menu"
-              >
-                {menuOpen ? (
-                  <X size={20} style={{ color: "var(--text)" }} />
-                ) : (
-                  <Menu size={20} style={{ color: "var(--text)" }} />
-                )}
-              </button>
-            </div>
+            <button
+              type="button"
+              className="ls-mobile-menu-button"
+              onClick={() => setMenuOpen(!menuOpen)}
+              aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
+              aria-expanded={menuOpen}
+            >
+              {menuOpen ? <X size={22} /> : <Menu size={22} />}
+            </button>
           </div>
         </div>
 
-        {/* Mobile menu */}
+        {/* Mobile menu dropdown */}
         {menuOpen && (
-          <div
-            id="mobile-menu"
-            className="lg:hidden border-t"
-            style={{ borderColor: "var(--border)", background: "var(--surface)" }}
-          >
-            <nav
-              className="max-w-7xl mx-auto px-4 py-3 flex flex-col gap-1"
-              aria-label="Mobile navigation"
-            >
-              {navLinks.map((link) => (
+          <nav className="ls-mobile-nav" aria-label="Mobile navigation">
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href;
+              return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="flex items-center px-3 py-3 rounded-[var(--radius-sm)] text-sm font-medium transition-colors hover:bg-[var(--primary-tint)] hover:text-[var(--primary)]"
-                  style={{ color: "var(--text)" }}
+                  className={`ls-mobile-nav-link ${isActive ? "is-active" : ""}`}
                   onClick={() => setMenuOpen(false)}
                 >
-                  {link.label}
+                  {lang === "ta" ? link.labelTa : link.label}
                 </Link>
-              ))}
-              <div className="mt-2 pt-2 border-t flex gap-2" style={{ borderColor: "var(--border)" }}>
-                <Link
-                  href="/login"
-                  className="flex-1 flex items-center justify-center gap-1.5 h-10 rounded-full text-sm font-medium"
-                  style={{ background: "var(--primary)", color: "var(--on-primary)" }}
-                  onClick={() => setMenuOpen(false)}
-                >
-                  <UserRound size={16} />
-                  Sign in
-                </Link>
-                <button
-                  onClick={() => setLang(lang === "en" ? "ta" : "en")}
-                  className="flex items-center gap-1 px-3 h-10 rounded-full border text-xs font-medium"
-                  style={{ borderColor: "var(--border-strong)", color: "var(--text-secondary)" }}
-                >
-                  <Globe size={14} />
-                  {lang === "en" ? "EN" : "தமிழ்"}
-                </button>
-              </div>
-            </nav>
-          </div>
+              );
+            })}
+            <Link
+              href="/login"
+              className="ls-mobile-login"
+              onClick={() => setMenuOpen(false)}
+            >
+              <UserRound size={17} />
+              <span>{lang === "ta" ? "உள்நுழைக" : "Sign in"}</span>
+            </Link>
+          </nav>
         )}
-      </header>
-    </>
+      </div>
+    </header>
   );
 }

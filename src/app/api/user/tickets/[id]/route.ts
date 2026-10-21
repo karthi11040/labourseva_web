@@ -1,13 +1,20 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCitizenIdentity } from "@/lib/auth-helpers";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(
-  _request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const citizen = await getCitizenIdentity(request);
+    if (!citizen) {
+      return NextResponse.json({ ok: false, error: "Authentication required." }, { status: 401 });
+    }
+
+    const customerId = citizen.customerId || 0;
     const { id } = await params;
     const ticketId = Number(id);
     if (!ticketId) {
@@ -22,12 +29,13 @@ export async function GET(
         e.name AS assigned_employee_name
        FROM helpdesk_tickets t
        LEFT JOIN employees e ON t.assigned_employee_id = e.id
-       WHERE t.id = ?`,
-      ticketId
+       WHERE t.id = ? AND (t.user_id = ? OR t.user_id IS NULL)`,
+      ticketId,
+      customerId
     );
 
     if (!ticket) {
-      return NextResponse.json({ ok: false, error: "Ticket not found." }, { status: 404 });
+      return NextResponse.json({ ok: false, error: "Ticket not found or access denied." }, { status: 404 });
     }
 
     const messages = await prisma.$queryRawUnsafe<any[]>(
@@ -74,19 +82,35 @@ export async function GET(
 }
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const citizen = await getCitizenIdentity(request);
+    if (!citizen) {
+      return NextResponse.json({ ok: false, error: "Authentication required." }, { status: 401 });
+    }
+
+    const customerId = citizen.customerId || 0;
     const { id } = await params;
     const ticketId = Number(id);
     if (!ticketId) {
       return NextResponse.json({ ok: false, error: "Invalid ticket ID." }, { status: 400 });
     }
 
+    // Verify ownership
+    const [ticket] = await prisma.$queryRawUnsafe<any[]>(
+      "SELECT id FROM helpdesk_tickets WHERE id = ? AND (user_id = ? OR user_id IS NULL) LIMIT 1",
+      ticketId,
+      customerId
+    );
+    if (!ticket) {
+      return NextResponse.json({ ok: false, error: "Ticket not found or unauthorized." }, { status: 404 });
+    }
+
     const body = await request.json().catch(() => ({}));
-    const author_name = body.author_name ? String(body.author_name).trim() : "Citizen";
-    const author_id = body.author_id ? Number(body.author_id) : null;
+    const author_name = citizen.name || (body.author_name ? String(body.author_name).trim() : "Citizen");
+    const author_id = customerId;
     const message_body = String(body.body || "").trim();
 
     if (!message_body) {
@@ -114,3 +138,4 @@ export async function POST(
     );
   }
 }
+
