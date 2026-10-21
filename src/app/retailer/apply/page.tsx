@@ -651,8 +651,8 @@ export default function RetailerApplyPage() {
 
     // Step 1: Service
     if (step === 1) {
-      if (!selectedServiceId) {
-        setStepError("Please select a statutory welfare scheme or citizen e-service to continue.");
+      if (!currentService) {
+        setStepError(serviceType === "STATUTORY" ? "No Services are available in this section yet." : "No E-Services are available in this section yet.");
         return false;
       }
       return true;
@@ -1197,36 +1197,23 @@ export default function RetailerApplyPage() {
               <span>Step 1 of 6 • படி 1: சேவை தேர்வு</span>
             </div>
             <h2 className="text-lg font-black text-slate-900">
-              Choose Citizen E-Service or Statutory Scheme
+              Choose a Service Section
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Select the e-Sevai or welfare board application requested by the citizen.
+              Open Services or the E-Services Portal to browse that section’s full list.
             </p>
           </div>
 
           {/* Service Category Switcher */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex rounded-xl bg-slate-100 p-1 w-full sm:w-auto">
+            <div role="group" aria-label="Application service section" className="flex rounded-xl bg-slate-100 p-1 w-full sm:w-auto">
               <button
                 type="button"
-                onClick={() => {
-                  setServiceType("E_SERVICE");
-                  if (esServices.length > 0) setSelectedServiceId(String(esServices[0].id));
-                }}
-                className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 ${
-                  serviceType === "E_SERVICE"
-                    ? "bg-white text-[#1e3a8a] shadow-xs"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                <Sparkles size={14} className="text-[#ea580c]" />
-                <span>Citizen E-Services (e-Sevai / ECSC)</span>
-              </button>
-
-              <button
-                type="button"
+                aria-pressed={serviceType === "STATUTORY"}
                 onClick={() => {
                   setServiceType("STATUTORY");
+                  setServiceSearch("");
+                  setActiveCategory("All");
                   if (statutoryServices.length > 0) setSelectedServiceId(String(statutoryServices[0].id));
                 }}
                 className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 ${
@@ -1236,7 +1223,26 @@ export default function RetailerApplyPage() {
                 }`}
               >
                 <Building size={14} />
-                <span>Statutory Welfare Schemes</span>
+                <span>Services ({statutoryServices.length})</span>
+              </button>
+
+              <button
+                type="button"
+                aria-pressed={serviceType === "E_SERVICE"}
+                onClick={() => {
+                  setServiceType("E_SERVICE");
+                  setServiceSearch("");
+                  setActiveCategory("All");
+                  if (esServices.length > 0) setSelectedServiceId(String(esServices[0].id));
+                }}
+                className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 ${
+                  serviceType === "E_SERVICE"
+                    ? "bg-white text-[#1e3a8a] shadow-xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <Sparkles size={14} className="text-[#ea580c]" />
+                <span>E-Services Portal ({esServices.length})</span>
               </button>
             </div>
 
@@ -1261,6 +1267,11 @@ export default function RetailerApplyPage() {
               )}
             </div>
           </div>
+
+          <section aria-label={serviceType === "STATUTORY" ? "Services" : "E-Services Portal"}>
+            <h3 className="mb-3 text-sm font-bold text-slate-800">
+              {serviceType === "STATUTORY" ? "Services" : "E-Services Portal"}
+            </h3>
 
           {/* Sub-Category Filter for E-Services */}
           {serviceType === "E_SERVICE" && categories.length > 0 && (
@@ -1294,16 +1305,18 @@ export default function RetailerApplyPage() {
           )}
 
           {/* Service Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 max-h-[460px] overflow-y-auto pr-1">
+          <div className="grid grid-cols-1 gap-3.5">
             {filteredServices.map((service) => {
               const isSelected = String(service.id) === String(selectedServiceId);
               const fee = Number(service.fee || service.retailerFee || 50);
 
               return (
-                <div
+                <button
+                  type="button"
                   key={service.id}
+                  aria-pressed={isSelected}
                   onClick={() => setSelectedServiceId(String(service.id))}
-                  className={`p-4 rounded-xl border text-left cursor-pointer transition relative flex flex-col justify-between gap-3 ${
+                  className={`w-full p-4 rounded-xl border text-left cursor-pointer transition relative flex flex-col justify-between gap-3 ${
                     isSelected
                       ? "border-[#1e3a8a] bg-blue-50/50 ring-2 ring-[#1e3a8a]/20 shadow-xs"
                       : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50"
@@ -1350,7 +1363,7 @@ export default function RetailerApplyPage() {
                       <span className="text-emerald-700 font-bold font-mono">+₹{estimatedCommission.toFixed(2)}</span>
                     </div>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
@@ -1362,6 +1375,7 @@ export default function RetailerApplyPage() {
               <p className="text-xs text-slate-400 mt-1">Try another keyword or category filter.</p>
             </div>
           )}
+          </section>
 
           {/* Step 1 Actions */}
           <div className="flex items-center justify-between pt-4 border-t border-slate-100">
