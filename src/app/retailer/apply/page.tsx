@@ -271,6 +271,7 @@ export default function RetailerApplyPage() {
 
   // Step 1: Service Selection state
   const [serviceType, setServiceType] = useState<"STATUTORY" | "E_SERVICE">("E_SERVICE");
+  const [servicesSectionOpen, setServicesSectionOpen] = useState(false);
   const [selectedServiceId, setSelectedServiceId] = useState<string>("");
   const [serviceSearch, setServiceSearch] = useState<string>("");
   const [activeCategory, setActiveCategory] = useState<string>("All");
@@ -331,6 +332,7 @@ export default function RetailerApplyPage() {
               const draft = JSON.parse(saved);
               if (draft.currentStep) setCurrentStep(Math.min(6, Math.max(1, Number(draft.currentStep))));
               if (draft.serviceType) setServiceType(draft.serviceType === "STATUTORY" ? "STATUTORY" : "E_SERVICE");
+              setServicesSectionOpen(Boolean(draft.servicesSectionOpen));
               if (draft.selectedServiceId) setSelectedServiceId(String(draft.selectedServiceId));
               if (draft.serviceSearch) setServiceSearch(String(draft.serviceSearch));
               if (draft.activeCategory) setActiveCategory(String(draft.activeCategory));
@@ -354,10 +356,6 @@ export default function RetailerApplyPage() {
               if (draft.selectedDistrictId) setSelectedDistrictId(String(draft.selectedDistrictId));
 
               setLastSavedTime("Restored from session");
-            } else if (json.esServices && json.esServices.length > 0) {
-              setSelectedServiceId(String(json.esServices[0].id));
-            } else if (json.statutoryServices && json.statutoryServices.length > 0) {
-              setSelectedServiceId(String(json.statutoryServices[0].id));
             }
           } catch {
             sessionStorage.removeItem(key);
@@ -384,6 +382,7 @@ export default function RetailerApplyPage() {
         const draft = {
           currentStep,
           serviceType,
+          servicesSectionOpen,
           selectedServiceId,
           serviceSearch,
           activeCategory,
@@ -423,6 +422,7 @@ export default function RetailerApplyPage() {
     receiptData,
     currentStep,
     serviceType,
+    servicesSectionOpen,
     selectedServiceId,
     serviceSearch,
     activeCategory,
@@ -649,8 +649,20 @@ export default function RetailerApplyPage() {
   function validateStep(step: number): boolean {
     setStepError(null);
 
-    // Step 1: Service
-    if (step === 1) {
+    if (serviceType === "E_SERVICE" && step === 1) {
+      if (!selectedDistrictId || !selectedTalukId || !selectedPanchayatId) {
+        setStepError("Select the district, taluk, and village for this E-Service Centre.");
+        return false;
+      }
+      return true;
+    }
+
+    // Select service: Step 1 for statutory services, Step 2 for E-Services.
+    if ((serviceType === "STATUTORY" && step === 1) || (serviceType === "E_SERVICE" && step === 2)) {
+      if (!servicesSectionOpen) {
+        setStepError("Choose Services or E-Services Portal to view the available applications.");
+        return false;
+      }
       if (!currentService) {
         setStepError(serviceType === "STATUTORY" ? "No Services are available in this section yet." : "No E-Services are available in this section yet.");
         return false;
@@ -658,8 +670,8 @@ export default function RetailerApplyPage() {
       return true;
     }
 
-    // Step 2: Citizen Particulars
-    if (step === 2) {
+    // Citizen particulars: Step 2 for statutory services, Step 3 for E-Services.
+    if ((serviceType === "STATUTORY" && step === 2) || (serviceType === "E_SERVICE" && step === 3)) {
       if (!form.applicantName.trim() || form.applicantName.trim().length < 2) {
         setStepError("Please enter the citizen applicant's full legal name.");
         return false;
@@ -697,8 +709,8 @@ export default function RetailerApplyPage() {
       return true;
     }
 
-    // Step 3: Address & Jurisdiction
-    if (step === 3) {
+    // Step 3 for statutory services; E-Service address and form are combined in Step 4.
+    if ((serviceType === "STATUTORY" && step === 3) || (serviceType === "E_SERVICE" && step === 4)) {
       if (!form.currentDoorNo.trim()) {
         setStepError("Please enter the Door / Flat Number for the residential address.");
         return false;
@@ -707,7 +719,7 @@ export default function RetailerApplyPage() {
         setStepError("Please enter the Street / Road Name.");
         return false;
       }
-      if (!selectedDistrictId) {
+      if (serviceType === "STATUTORY" && !selectedDistrictId) {
         setStepError("Please select the administrative District for this application.");
         return false;
       }
@@ -719,8 +731,18 @@ export default function RetailerApplyPage() {
       return true;
     }
 
-    // Step 4: Questionnaire
+    // Questionnaire is Step 4 for both flows; E-Services also validates its address here.
     if (step === 4) {
+      if (serviceType === "E_SERVICE") {
+        if (!form.currentDoorNo.trim() || !form.currentStreet.trim()) {
+          setStepError("Enter the citizen's door number and street for the application.");
+          return false;
+        }
+        if (form.currentPinCode.replace(/\D/g, "").length !== 6) {
+          setStepError("Enter a valid 6-digit postal PIN code.");
+          return false;
+        }
+      }
       if (currentService?.fields && currentService.fields.length > 0) {
         for (const f of currentService.fields) {
           if (f.required && !serviceFieldValues[f.key]?.trim()) {
@@ -798,6 +820,11 @@ export default function RetailerApplyPage() {
     if (confirm("Are you sure you want to clear this saved draft and start fresh? All entered details will be reset.")) {
       clearApplicationDraft();
       setCurrentStep(1);
+      setServicesSectionOpen(false);
+      setServiceType("E_SERVICE");
+      setSelectedServiceId("");
+      setServiceSearch("");
+      setActiveCategory("All");
       setForm(INITIAL_FORM);
       setServiceFieldValues({});
       setDocuments(
@@ -868,6 +895,11 @@ export default function RetailerApplyPage() {
     clearApplicationDraft();
     setReceiptData(null);
     setCurrentStep(1);
+    setServicesSectionOpen(false);
+    setServiceType("E_SERVICE");
+    setSelectedServiceId("");
+    setServiceSearch("");
+    setActiveCategory("All");
     setForm(INITIAL_FORM);
     setServiceFieldValues({});
     setDocuments(
@@ -1056,9 +1088,52 @@ export default function RetailerApplyPage() {
     );
   }
 
+  const stepLabels = serviceType === "E_SERVICE"
+    ? ["Select Centre", "Select Services", "Aadhaar Details", "Fill Form", "Upload Documents", "Payment"]
+    : STEPS.map((step) => step.label);
+
+  if (currentStep === 1 && !servicesSectionOpen) {
+    return (
+      <div className="mx-auto max-w-4xl space-y-5 px-4 py-8">
+        <div>
+          <h1 className="text-2xl font-black text-slate-900">Choose a service section</h1>
+          <p className="mt-1 text-sm text-slate-500">Select a section to browse its available services.</p>
+        </div>
+        <div role="group" aria-label="Choose an application section" className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <button type="button" onClick={() => {
+            setServiceType("STATUTORY"); setServiceSearch(""); setActiveCategory("All");
+            setServicesSectionOpen(true);
+            if (statutoryServices.length > 0) setSelectedServiceId(String(statutoryServices[0].id));
+          }} className="min-h-36 rounded-xl border border-slate-200 bg-white p-5 text-left shadow-xs transition hover:border-[#1e3a8a] hover:bg-blue-50">
+            <span className="flex items-center justify-between gap-4">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-[#1e3a8a]"><Building size={19} /></span>
+              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">{statutoryServices.length} {statutoryServices.length === 1 ? "service" : "services"}</span>
+            </span>
+            <span className="mt-4 block text-base font-bold text-slate-900">Services</span>
+            <span className="mt-1 block text-sm text-slate-500">Browse welfare schemes and statutory services.</span>
+          </button>
+          <button type="button" onClick={() => {
+            setServiceType("E_SERVICE"); setServiceSearch(""); setActiveCategory("All");
+            setServicesSectionOpen(true);
+            if (esServices.length > 0) setSelectedServiceId(String(esServices[0].id));
+          }} className="min-h-36 rounded-xl border border-slate-200 bg-white p-5 text-left shadow-xs transition hover:border-[#ea580c] hover:bg-orange-50">
+            <span className="flex items-center justify-between gap-4">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 text-[#ea580c]"><Sparkles size={19} /></span>
+              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">{esServices.length} {esServices.length === 1 ? "service" : "services"}</span>
+            </span>
+            <span className="mt-4 block text-base font-bold text-slate-900">E-Services Portal</span>
+            <span className="mt-1 block text-sm text-slate-500">Browse e-Sevai and online citizen services.</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-16 font-sans antialiased">
+      {(currentStep > 1 || (currentStep === 1 && serviceType === "E_SERVICE" && servicesSectionOpen)) && <>
       {/* Top Banner with Kendra Live Wallet & Session State */}
+      {currentStep > 1 && <>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -1114,6 +1189,7 @@ export default function RetailerApplyPage() {
           </div>
         </div>
       </div>
+      </>}
 
       {/* Modern 6-Step Stepper Indicator */}
       <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
@@ -1150,7 +1226,7 @@ export default function RetailerApplyPage() {
                   {isCompleted ? <Check size={13} /> : s.id}
                 </div>
                 <div className="min-w-0">
-                  <span className="text-xs font-bold leading-tight block truncate">{s.label}</span>
+                  <span className="text-xs font-bold leading-tight block truncate">{stepLabels[s.id - 1]}</span>
                   <span className="text-[10px] text-slate-400 font-normal block truncate">{s.labelTa}</span>
                 </div>
               </button>
@@ -1166,9 +1242,10 @@ export default function RetailerApplyPage() {
           />
         </div>
       </div>
+      </>}
 
       {/* Validation / Step Error Notice */}
-      {stepError && (
+      {currentStep > 1 && stepError && (
         <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center gap-3 animate-shake shadow-xs">
           <AlertCircle className="w-5 h-5 flex-shrink-0 text-amber-600" />
           <div className="flex-1 font-semibold">{stepError}</div>
@@ -1179,7 +1256,7 @@ export default function RetailerApplyPage() {
       )}
 
       {/* Global API Error */}
-      {error && (
+      {currentStep > 1 && error && (
         <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-3">
           <AlertCircle className="w-5 h-5 flex-shrink-0 text-rose-600" />
           <div className="flex-1 font-semibold">{error}</div>
@@ -1189,89 +1266,76 @@ export default function RetailerApplyPage() {
       {/* ============================================================ */}
       {/* STEP 1: SERVICE & SCHEME SELECTION                           */}
       {/* ============================================================ */}
-      {currentStep === 1 && (
+      {serviceType === "E_SERVICE" && currentStep === 1 && servicesSectionOpen && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+          <div className="mb-6 border-b border-slate-100 pb-4">
+            <span className="text-xs font-bold text-[#1e3a8a]">Step 1: Select Your E-CSC Centre Jurisdiction</span>
+            <p className="mt-1 text-sm text-slate-500">Select the district, taluk, and panchayat or revenue village for this application.</p>
+          </div>
+          <div className="grid max-w-2xl grid-cols-1 gap-4">
+            <label className="text-xs font-bold text-slate-700">District / மாவட்டம் <span className="text-rose-500">*</span>
+              <select value={selectedDistrictId} onChange={(e) => setSelectedDistrictId(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm font-medium">
+                <option value="">Select District</option>
+                {districts.map((d) => <option key={d.id} value={d.id}>{d.name} {d.nameTa ? `(${d.nameTa})` : ""}</option>)}
+              </select>
+            </label>
+            <label className="text-xs font-bold text-slate-700">Taluk / வட்டம் <span className="text-rose-500">*</span>
+              <select value={selectedTalukId} disabled={!selectedDistrictId || loadingTaluks} onChange={(e) => setSelectedTalukId(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm font-medium disabled:bg-slate-50">
+                <option value="">{loadingTaluks ? "Loading taluks…" : selectedDistrictId ? "Select Taluk" : "Choose district first"}</option>
+                {taluks.map((t) => <option key={t.id} value={t.id}>{t.name} {t.nameTa ? `(${t.nameTa})` : ""}</option>)}
+              </select>
+            </label>
+            <label className="text-xs font-bold text-slate-700">Panchayat / Village / ஊராட்சி <span className="text-rose-500">*</span>
+              <select value={selectedPanchayatId} disabled={!selectedTalukId || loadingPanchayats} onChange={(e) => {
+                setSelectedPanchayatId(e.target.value);
+                const selected = panchayats.find((p) => String(p.id) === e.target.value);
+                if (selected) updateForm("currentVillage", selected.name);
+              }} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm font-medium disabled:bg-slate-50">
+                <option value="">{loadingPanchayats ? "Loading villages…" : selectedTalukId ? "Select Panchayat / Village" : "Choose taluk first"}</option>
+                {panchayats.map((p) => <option key={p.id} value={p.id}>{p.name} {p.nameTa ? `(${p.nameTa})` : ""}</option>)}
+              </select>
+            </label>
+          </div>
+          {stepError && <p className="mt-4 text-sm font-medium text-rose-700">{stepError}</p>}
+          <div className="mt-6 flex justify-between border-t border-slate-100 pt-4">
+            <button type="button" onClick={() => setServicesSectionOpen(false)} className="rounded-xl border border-slate-200 px-5 py-2.5 text-xs font-bold text-slate-700">Back</button>
+            <button type="button" onClick={handleNext} className="inline-flex items-center gap-2 rounded-xl bg-[#1e3a8a] px-6 py-2.5 text-xs font-bold text-white">Continue to Select Services <ArrowRight size={14} /></button>
+          </div>
+        </section>
+      )}
+
+      {((serviceType === "STATUTORY" && currentStep === 1 && servicesSectionOpen) || (serviceType === "E_SERVICE" && currentStep === 2)) && (
         <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-6 shadow-xs">
           <div className="border-b border-slate-100 pb-4">
-            <div className="flex items-center gap-2 text-[11px] font-bold text-[#1e3a8a] uppercase tracking-wider mb-1">
-              <Building size={14} />
-              <span>Step 1 of 6 • படி 1: சேவை தேர்வு</span>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <button type="button" onClick={() => serviceType === "E_SERVICE" ? handleBack() : setServicesSectionOpen(false)} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                <ArrowLeft size={14} /> {serviceType === "E_SERVICE" ? "Back to Centre" : "Back to sections"}
+              </button>
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Step {currentStep} of 6 · {currentStep}/6</span>
             </div>
             <h2 className="text-lg font-black text-slate-900">
-              Choose a Service Section
+              {serviceType === "STATUTORY" ? "Services" : "Select Services"}
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Open Services or the E-Services Portal to browse that section’s full list.
+              Choose a service to continue with the application.
             </p>
           </div>
-
-          {/* Service Category Switcher */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div role="group" aria-label="Application service section" className="flex rounded-xl bg-slate-100 p-1 w-full sm:w-auto">
-              <button
-                type="button"
-                aria-pressed={serviceType === "STATUTORY"}
-                onClick={() => {
-                  setServiceType("STATUTORY");
-                  setServiceSearch("");
-                  setActiveCategory("All");
-                  if (statutoryServices.length > 0) setSelectedServiceId(String(statutoryServices[0].id));
-                }}
-                className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 ${
-                  serviceType === "STATUTORY"
-                    ? "bg-white text-[#1e3a8a] shadow-xs"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                <Building size={14} />
-                <span>Services ({statutoryServices.length})</span>
-              </button>
-
-              <button
-                type="button"
-                aria-pressed={serviceType === "E_SERVICE"}
-                onClick={() => {
-                  setServiceType("E_SERVICE");
-                  setServiceSearch("");
-                  setActiveCategory("All");
-                  if (esServices.length > 0) setSelectedServiceId(String(esServices[0].id));
-                }}
-                className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 ${
-                  serviceType === "E_SERVICE"
-                    ? "bg-white text-[#1e3a8a] shadow-xs"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                <Sparkles size={14} className="text-[#ea580c]" />
-                <span>E-Services Portal ({esServices.length})</span>
-              </button>
-            </div>
-
-            {/* Live Search */}
-            <div className="relative w-full sm:w-72">
-              <Search className="absolute left-3 top-2.5 text-slate-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Search service name, keyword..."
-                value={serviceSearch}
-                onChange={(e) => setServiceSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1e3a8a]/20 focus:border-[#1e3a8a]"
-              />
-              {serviceSearch && (
-                <button
-                  type="button"
-                  onClick={() => setServiceSearch("")}
-                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-          </div>
-
           <section aria-label={serviceType === "STATUTORY" ? "Services" : "E-Services Portal"}>
             <h3 className="mb-3 text-sm font-bold text-slate-800">
               {serviceType === "STATUTORY" ? "Services" : "E-Services Portal"}
             </h3>
+
+          <div className="relative mb-4 max-w-lg">
+            <Search className="absolute left-3 top-2.5 text-slate-400 w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Search service name or keyword..."
+              value={serviceSearch}
+              onChange={(e) => setServiceSearch(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 py-2.5 pl-9 pr-10 text-sm focus:border-[#1e3a8a] focus:outline-none focus:ring-2 focus:ring-[#1e3a8a]/20"
+            />
+            {serviceSearch && <button type="button" aria-label="Clear search" onClick={() => setServiceSearch("")} className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"><X size={15} /></button>}
+          </div>
 
           {/* Sub-Category Filter for E-Services */}
           {serviceType === "E_SERVICE" && categories.length > 0 && (
@@ -1322,9 +1386,9 @@ export default function RetailerApplyPage() {
                       : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50"
                   }`}
                 >
-                  <div>
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2">
+                  <span className="block">
+                    <span className="flex items-start justify-between gap-2">
+                      <span className="flex items-center gap-2">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
                           ID #{service.id}
                         </span>
@@ -1333,8 +1397,8 @@ export default function RetailerApplyPage() {
                             {service.fields.length} Questionnaire Fields
                           </span>
                         )}
-                      </div>
-                      <div
+                      </span>
+                      <span
                         className={`w-5 h-5 rounded-full flex items-center justify-center border transition ${
                           isSelected
                             ? "bg-[#1e3a8a] border-[#1e3a8a] text-white"
@@ -1342,27 +1406,27 @@ export default function RetailerApplyPage() {
                         }`}
                       >
                         {isSelected && <Check size={12} />}
-                      </div>
-                    </div>
+                      </span>
+                    </span>
 
-                    <h4 className="text-sm font-bold text-slate-900 mt-2 line-clamp-1">
+                    <span className="mt-2 block text-sm font-bold text-slate-900 line-clamp-1">
                       {service.name}
-                    </h4>
-                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                    </span>
+                    <span className="mt-1 block text-xs text-slate-500 line-clamp-2">
                       {service.description || "Official Tamil Nadu statutory and citizen e-governance service."}
-                    </p>
-                  </div>
+                    </span>
+                  </span>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 text-xs">
-                    <div>
+                  <span className="flex items-center justify-between border-t border-slate-200/60 pt-2 text-xs">
+                    <span>
                       <span className="text-[10px] text-slate-400 uppercase font-bold block">Fee</span>
                       <strong className="text-slate-900 font-mono text-sm">₹{fee.toFixed(2)}</strong>
-                    </div>
-                    <div className="text-right">
+                    </span>
+                    <span className="text-right">
                       <span className="text-[10px] text-slate-400 uppercase font-bold block">Kendra Margin</span>
                       <span className="text-emerald-700 font-bold font-mono">+₹{estimatedCommission.toFixed(2)}</span>
-                    </div>
-                  </div>
+                    </span>
+                  </span>
                 </button>
               );
             })}
@@ -1380,14 +1444,14 @@ export default function RetailerApplyPage() {
           {/* Step 1 Actions */}
           <div className="flex items-center justify-between pt-4 border-t border-slate-100">
             <div className="text-xs text-slate-500">
-              Selected: <strong className="text-slate-900">{currentService?.name || "None"}</strong>
+              Selected: <strong className="text-slate-900">{servicesSectionOpen ? currentService?.name || "None" : "Choose a section"}</strong>
             </div>
             <button
               type="button"
               onClick={handleNext}
               className="px-6 py-2.5 rounded-xl bg-[#1e3a8a] hover:bg-[#1e40af] text-white font-bold text-xs flex items-center gap-2 shadow-xs transition"
             >
-              <span>Continue to Citizen Particulars</span>
+              <span>{serviceType === "E_SERVICE" ? "Continue to Aadhaar Details" : "Continue to Citizen Particulars"}</span>
               <ArrowRight size={14} />
             </button>
           </div>
@@ -1397,12 +1461,12 @@ export default function RetailerApplyPage() {
       {/* ============================================================ */}
       {/* STEP 2: CITIZEN DEMOGRAPHICS & AADHAAR                       */}
       {/* ============================================================ */}
-      {currentStep === 2 && (
+      {((serviceType === "STATUTORY" && currentStep === 2) || (serviceType === "E_SERVICE" && currentStep === 3)) && (
         <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-6 shadow-xs">
           <div className="border-b border-slate-100 pb-4">
             <div className="flex items-center gap-2 text-[11px] font-bold text-[#1e3a8a] uppercase tracking-wider mb-1">
               <User size={14} />
-              <span>Step 2 of 6 • படி 2: பயனாளி விவரங்கள்</span>
+              <span>{serviceType === "E_SERVICE" ? "Step 3 of 6 • Aadhaar Details" : "Step 2 of 6 • படி 2: பயனாளி விவரங்கள்"}</span>
             </div>
             <h2 className="text-lg font-black text-slate-900">
               Citizen Identity & Demographic Profile
@@ -1740,14 +1804,14 @@ export default function RetailerApplyPage() {
               className="px-5 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-2 transition"
             >
               <ArrowLeft size={14} />
-              <span>Back to Services</span>
+              <span>{serviceType === "E_SERVICE" ? "Back to Select Services" : "Back to Services"}</span>
             </button>
             <button
               type="button"
               onClick={handleNext}
               className="px-6 py-2.5 rounded-xl bg-[#1e3a8a] hover:bg-[#1e40af] text-white font-bold text-xs flex items-center gap-2 shadow-xs transition"
             >
-              <span>Continue to Address & Jurisdiction</span>
+              <span>{serviceType === "E_SERVICE" ? "Continue to Fill Form" : "Continue to Address & Jurisdiction"}</span>
               <ArrowRight size={14} />
             </button>
           </div>
@@ -1757,12 +1821,12 @@ export default function RetailerApplyPage() {
       {/* ============================================================ */}
       {/* STEP 3: ADDRESS & ADMINISTRATIVE JURISDICTION                */}
       {/* ============================================================ */}
-      {currentStep === 3 && (
+      {((serviceType === "STATUTORY" && currentStep === 3) || (serviceType === "E_SERVICE" && currentStep === 4)) && (
         <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-6 shadow-xs">
           <div className="border-b border-slate-100 pb-4">
             <div className="flex items-center gap-2 text-[11px] font-bold text-[#1e3a8a] uppercase tracking-wider mb-1">
               <MapPin size={14} />
-              <span>Step 3 of 6 • படி 3: முகவரி & அதிகார வரம்பு</span>
+              <span>{serviceType === "E_SERVICE" ? "Step 4 of 6 • Fill Form" : "Step 3 of 6 • படி 3: முகவரி & அதிகார வரம்பு"}</span>
             </div>
             <h2 className="text-lg font-black text-slate-900">
               Residential Address & Administrative Jurisdiction
@@ -1805,6 +1869,8 @@ export default function RetailerApplyPage() {
                 />
               </div>
 
+              {/* Jurisdiction was selected in Step 1 for E-Services. */}
+              {serviceType === "STATUTORY" && <>
               {/* Cascading District */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -1869,6 +1935,7 @@ export default function RetailerApplyPage() {
                   ))}
                 </select>
               </div>
+              </>}
 
               {/* Postal PIN Code */}
               <div>
@@ -1977,7 +2044,7 @@ export default function RetailerApplyPage() {
           </div>
 
           {/* Navigation */}
-          <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+          {serviceType === "STATUTORY" && <div className="flex items-center justify-between pt-4 border-t border-slate-100">
             <button
               type="button"
               onClick={handleBack}
@@ -1994,19 +2061,19 @@ export default function RetailerApplyPage() {
               <span>Continue to Service Questionnaire</span>
               <ArrowRight size={14} />
             </button>
-          </div>
+          </div>}
         </div>
       )}
 
       {/* ============================================================ */}
       {/* STEP 4: DYNAMIC SERVICE QUESTIONNAIRE                        */}
       {/* ============================================================ */}
-      {currentStep === 4 && (
+      {((serviceType === "STATUTORY" && currentStep === 4) || (serviceType === "E_SERVICE" && currentStep === 4)) && (
         <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-6 shadow-xs">
           <div className="border-b border-slate-100 pb-4">
             <div className="flex items-center gap-2 text-[11px] font-bold text-[#1e3a8a] uppercase tracking-wider mb-1">
               <FileText size={14} />
-              <span>Step 4 of 6 • படி 4: சேவை சார்ந்த கேள்விகள்</span>
+              <span>{serviceType === "E_SERVICE" ? "Step 4 of 6 • Fill Form" : "Step 4 of 6 • படி 4: சேவை சார்ந்த கேள்விகள்"}</span>
             </div>
             <h2 className="text-lg font-black text-slate-900">
               Service Questionnaire & Scheme Particulars
@@ -2099,7 +2166,7 @@ export default function RetailerApplyPage() {
               className="px-5 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-2 transition"
             >
               <ArrowLeft size={14} />
-              <span>Back to Address</span>
+              <span>{serviceType === "E_SERVICE" ? "Back to Aadhaar Details" : "Back to Address"}</span>
             </button>
             <button
               type="button"

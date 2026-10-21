@@ -13,12 +13,23 @@ import {
   LogOut,
   Menu,
   X,
-  CreditCard,
   Plus,
+  ExternalLink,
+  Circle,
+  Shield,
+  ChevronRight,
 } from "lucide-react";
-import { getDistributorSession, clearDistributorSession, DistributorSessionData } from "@/lib/distributor-session";
+import {
+  getDistributorSession,
+  clearDistributorSession,
+  DistributorSessionData,
+} from "@/lib/distributor-session";
 
-export default function DistributorLayout({ children }: { children: React.ReactNode }) {
+export default function DistributorLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [session, setSession] = useState<DistributorSessionData | null>(null);
@@ -35,7 +46,6 @@ export default function DistributorLayout({ children }: { children: React.ReactN
       setBalance(sess.walletBalance || 0);
     }
 
-    // Fetch fresh balance from API
     async function fetchLiveBalance() {
       try {
         const res = await fetch("/api/distributor/dashboard");
@@ -49,6 +59,17 @@ export default function DistributorLayout({ children }: { children: React.ReactN
     }
     fetchLiveBalance();
   }, [pathname, isLoginPage]);
+
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenuOpen]);
 
   function handleLogout() {
     clearDistributorSession();
@@ -68,171 +89,267 @@ export default function DistributorLayout({ children }: { children: React.ReactN
     { name: "Territory Profile", href: "/distributor/profile", icon: Building2 },
   ];
 
-  return (
-    <div className="min-h-screen bg-[#f8fafc] text-[#0f172a] flex flex-col font-sans">
-      {/* 1. Top Utility Header */}
-      <header className="bg-[#0f172a] text-white border-b-2 border-[#ea580c]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between text-xs">
-          <div className="flex items-center gap-3">
-            <span className="font-bold tracking-wide">தமிழ்நாடு அரசு தொழிலாளர் நல வாரியம்</span>
-            <span className="hidden md:inline text-slate-500">|</span>
-            <span className="hidden md:inline text-slate-300 font-medium">Territory Distributor Operations Hub</span>
-          </div>
+  const brandName = session?.name || "Territory Distributor";
+  const distributorId = session?.registrationNo || `DIST-${session?.id}`;
+  const balanceDisplay = Number(balance).toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 
-          <div className="flex items-center gap-4">
-            {session && (
-              <span className="hidden sm:inline bg-slate-800 text-slate-200 px-3 py-1 rounded-full text-[11px] font-semibold border border-slate-700">
-                Distributor ID: {session.registrationNo || `DIST-${session.id}`}
-              </span>
-            )}
-            <Link href="/" className="hover:text-amber-400 transition-colors">
-              Public Portal
-            </Link>
+  // Reusable sidebar content — same markup for desktop sidebar and mobile drawer
+  const sidebarContent = (
+    <div className="flex flex-col h-full bg-white">
+      {/* ───── Brand ───── */}
+      <div className="px-5 h-16 flex items-center justify-between border-b border-slate-200 shrink-0">
+        <Link
+          href="/distributor/dashboard"
+          className="flex items-center gap-2.5 group"
+        >
+          <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-slate-800 to-slate-900 text-white flex items-center justify-center font-black text-base shrink-0">
+            <span className="block h-0.5 w-5 bg-[#ea580c] -mt-3" />
+            வி
+          </div>
+          <div className="leading-tight">
+            <div className="text-[15px] font-bold text-slate-900 tracking-tight">
+              Labour<span className="text-[#ea580c]">Seva</span>
+            </div>
+            <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">
+              Distributor Hub
+            </div>
+          </div>
+        </Link>
+      </div>
+
+      {/* ───── Distributor identity card ───── */}
+      <div className="px-3 pt-4 pb-3 shrink-0">
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <div className="flex items-start justify-between gap-2 mb-2.5">
+            <div className="min-w-0 flex-1">
+              <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">
+                Signed in as
+              </div>
+              <div className="text-sm font-bold text-slate-900 truncate mt-0.5">
+                {brandName}
+              </div>
+            </div>
+            <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded-full border border-blue-200 shrink-0">
+              <Shield size={8} />
+              Regional
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 text-[11px] text-slate-600 font-mono">
+            <Circle size={9} className="fill-emerald-500 text-emerald-500" />
+            <span className="text-slate-400">ID:</span>
+            <span className="font-semibold text-slate-900">{distributorId}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ───── Float balance mini-card ───── */}
+      <div className="px-3 pb-4 shrink-0">
+        <Link
+          href="/distributor/wallet"
+          onClick={() => setMobileMenuOpen(false)}
+          className="block rounded-lg border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 p-3 hover:border-slate-300 transition-colors group"
+        >
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+              Float Balance
+            </span>
+            <Wallet size={13} className="text-slate-400" />
+          </div>
+          <div className="flex items-end justify-between">
+            <div className="text-base font-bold text-slate-900 tabular-nums leading-none">
+              ₹{balanceDisplay}
+            </div>
+            <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-[#ea580c] group-hover:gap-1 transition-all">
+              <Plus size={11} />
+              Add Float
+            </span>
+          </div>
+        </Link>
+      </div>
+
+      {/* ───── Nav ───── */}
+      <nav className="flex-1 overflow-y-auto px-3 pb-3">
+        <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-2 mb-1">
+          Operations
+        </div>
+        <div className="space-y-0.5">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`relative flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium transition-colors ${
+                  active
+                    ? "bg-slate-100 text-slate-900"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                }`}
+              >
+                {active && (
+                  <span className="absolute left-0 top-2 bottom-2 w-1 bg-[#ea580c] rounded-full" />
+                )}
+                <Icon
+                  size={15}
+                  className={active ? "text-[#ea580c]" : "text-slate-400"}
+                />
+                <span className="flex-1">{item.name}</span>
+                {active && (
+                  <ChevronRight size={13} className="text-[#ea580c]" />
+                )}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+
+      {/* ───── Footer (public portal + sign out) ───── */}
+      <div className="border-t border-slate-200 p-3 shrink-0 space-y-1">
+        <Link
+          href="/"
+          onClick={() => setMobileMenuOpen(false)}
+          className="flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[12px] font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors"
+        >
+          <span className="w-7 h-7 rounded-md bg-slate-100 flex items-center justify-center">
+            <ExternalLink size={12} />
+          </span>
+          <span className="flex-1">Public Portal</span>
+        </Link>
+        <button
+          type="button"
+          onClick={() => {
+            setMobileMenuOpen(false);
+            handleLogout();
+          }}
+          className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium text-rose-600 hover:bg-rose-50 transition-colors"
+        >
+          <span className="w-7 h-7 rounded-md bg-rose-50 flex items-center justify-center">
+            <LogOut size={13} />
+          </span>
+          <span className="flex-1">Sign Out</span>
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased flex flex-col">
+      {/* ───────────── Top Utility Strip ───────────── */}
+      <header className="bg-[#0f172a] text-white shrink-0 z-40 relative">
+        <div
+          className="absolute inset-0 opacity-[0.04] pointer-events-none"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 1px 1px, white 1px, transparent 0)",
+            backgroundSize: "24px 24px",
+          }}
+        />
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#ea580c] to-transparent" />
+
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 h-9 flex items-center justify-between text-[11px]">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="font-semibold tracking-wide whitespace-nowrap">
+              தமிழ்நாடு அரசு தொழிலாளர் நல வாரியம்
+            </span>
+            <span className="hidden md:inline text-slate-600">·</span>
+            <span className="hidden md:inline text-slate-300 font-medium truncate">
+              Territory Distributor Operations Hub
+            </span>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <span className="inline-flex items-center gap-1.5 text-emerald-300 text-[10px] font-medium">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              System Live
+            </span>
           </div>
         </div>
       </header>
 
-      {/* 2. Distributor Branding & Live Float Balance */}
-      <div className="bg-white border-b border-[#cbd5e1] shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-xl bg-[#0f172a] text-white flex items-center justify-center font-black text-xl shadow-md border-t-2 border-[#ea580c]">
-              வி
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-black text-[#0f172a] tracking-tight">
-                  {session?.name || "Territory Distributor Hub"}
-                </h1>
-                <span className="text-[10px] font-bold uppercase bg-blue-100 text-[#1e3a8a] px-2 py-0.5 rounded border border-blue-200">
-                  Regional Channel Partner
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 font-medium">
-                Kendra Network Management • Float Funding & Override Commissions
-              </p>
-            </div>
-          </div>
+      {/* ───────────── Body: Sidebar + Main ───────────── */}
+      <div className="flex-1 flex">
+        {/* Desktop Sidebar */}
+        <aside className="hidden lg:flex w-[256px] shrink-0 border-r border-slate-200 bg-white sticky top-9 h-[calc(100vh-2.25rem)]">
+          {sidebarContent}
+        </aside>
 
-          <div className="flex items-center gap-3">
-            {/* Live Float Balance Box */}
-            <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 flex items-center gap-3 shadow-inner">
-              <div className="w-8 h-8 rounded-lg bg-blue-100 text-[#1e3a8a] flex items-center justify-center font-bold">
-                <Wallet size={18} />
-              </div>
-              <div>
-                <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
-                  Distributor Float Balance
-                </span>
-                <span className="text-lg font-black text-slate-900">
-                  ₹{Number(balance).toFixed(2)}
-                </span>
-              </div>
-              <Link
-                href="/distributor/wallet"
-                className="ml-2 px-3 py-1.5 bg-[#ea580c] hover:bg-[#c2410c] text-white text-xs font-bold rounded-lg transition-colors shadow-sm flex items-center gap-1"
-              >
-                <Plus size={14} />
-                <span>Add Float</span>
-              </Link>
-            </div>
+        {/* Mobile menu button (floating) */}
+        <button
+          type="button"
+          onClick={() => setMobileMenuOpen(true)}
+          className="lg:hidden fixed top-12 right-4 z-30 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#0f172a] text-white text-xs font-bold shadow-lg"
+          aria-label="Open menu"
+        >
+          <Menu size={14} />
+          Menu
+        </button>
 
-            {/* Mobile menu toggle */}
+        {/* Mobile drawer */}
+        <div
+          className={`lg:hidden fixed inset-0 z-50 transition-all ${
+            mobileMenuOpen ? "visible" : "invisible"
+          }`}
+        >
+          <div
+            className={`absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity ${
+              mobileMenuOpen ? "opacity-100" : "opacity-0"
+            }`}
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          <aside
+            className={`absolute top-0 left-0 h-full w-[280px] max-w-[85vw] bg-white shadow-2xl flex flex-col transition-transform duration-300 ease-out ${
+              mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
+          >
             <button
               type="button"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50"
+              onClick={() => setMobileMenuOpen(false)}
+              className="absolute top-3 right-3 z-10 w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"
+              aria-label="Close menu"
             >
-              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+              <X size={16} />
             </button>
-          </div>
+            {sidebarContent}
+          </aside>
         </div>
 
-        {/* 3. Primary Navigation Row */}
-        <nav className="hidden md:block bg-[#0f172a]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
-            <div className="flex items-center space-x-1">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const active = pathname === item.href;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`inline-flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-all border-b-4 ${
-                      active
-                        ? "border-[#ea580c] text-white bg-slate-800"
-                        : "border-transparent text-slate-300 hover:text-white hover:bg-slate-800/60"
-                    }`}
-                  >
-                    <Icon size={16} />
-                    <span>{item.name}</span>
-                  </Link>
-                );
-              })}
+        {/* Main content + footer */}
+        <div className="flex-1 flex flex-col min-w-0">
+          <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            {children}
+          </main>
+
+          {/* Footer */}
+          <footer className="bg-white border-t border-slate-200 shrink-0">
+            <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-slate-500">
+                <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
+                  <span className="font-semibold text-slate-700">
+                    © {new Date().getFullYear()} LabourSeva
+                  </span>
+                  <span className="text-slate-300">·</span>
+                  <span>Channel Operations</span>
+                  <span className="text-slate-300 hidden sm:inline">·</span>
+                  <span className="hidden sm:inline">
+                    Territory Distribution Division
+                  </span>
+                </div>
+                <div className="flex items-center gap-4 flex-wrap justify-center">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Shield size={11} className="text-slate-400" />
+                    Prepaid Float Protocol
+                  </span>
+                  <span className="text-slate-300">·</span>
+                  <span>Realtime Retailer Wallet Funding</span>
+                </div>
+              </div>
             </div>
-
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="inline-flex items-center gap-1.5 text-xs text-slate-300 hover:text-white font-bold py-2 px-3 rounded hover:bg-slate-800 transition-colors"
-            >
-              <LogOut size={14} />
-              <span>Sign Out</span>
-            </button>
-          </div>
-        </nav>
-
-        {/* Mobile Navigation Drawer */}
-        {mobileMenuOpen && (
-          <div className="md:hidden bg-[#0f172a] border-t border-slate-800 px-4 py-3 space-y-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const active = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold ${
-                    active
-                      ? "bg-[#ea580c] text-white"
-                      : "text-slate-300 hover:bg-slate-800"
-                  }`}
-                >
-                  <Icon size={16} />
-                  <span>{item.name}</span>
-                </Link>
-              );
-            })}
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold text-rose-300 hover:bg-rose-900/40 mt-2 border-t border-slate-800 pt-3"
-            >
-              <LogOut size={16} />
-              <span>Sign Out</span>
-            </button>
-          </div>
-        )}
+          </footer>
+        </div>
       </div>
-
-      {/* 4. Main Body Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
-        {children}
-      </main>
-
-      {/* 5. Footer */}
-      <footer className="bg-slate-900 text-slate-400 text-xs border-t-4 border-[#ea580c] mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p>© {new Date().getFullYear()} LabourSeva Channel Operations. Territory Distribution Division.</p>
-          <div className="flex items-center gap-4 text-slate-400">
-            <span>Prepaid Float Protocol</span>
-            <span>•</span>
-            <span>Real-time Retailer Wallet Funding</span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
