@@ -58,6 +58,10 @@ const nextConfig = {
   reactStrictMode: true,
   compress: true,
   experimental: {
+    // Shared hosting (Hostinger) caps threads per account; parallel build
+    // workers crash with "OS can't spawn worker thread" (os error 11).
+    cpus: 1,
+    workerThreads: false,
     optimizePackageImports: ["lucide-react"],
   },
   images: {

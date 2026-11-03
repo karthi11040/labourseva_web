@@ -265,8 +265,45 @@ async function guardCitizenUpload(
 // Proxy function (Next.js 16 — replaces deprecated middleware)
 // ---------------------------------------------------------------------------
 
-export async function proxy(request: NextRequest) {
+// ---------------------------------------------------------------------------
+// Portal subdomains: admin.labourseva.com/x is served from /admin/x, etc.
+// Paths that already carry the prefix (existing absolute links) pass as-is.
+// ---------------------------------------------------------------------------
+
+const SUBDOMAIN_PREFIX: Record<string, string> = {
+  admin: "/admin",
+  user: "/user",
+  customer: "/user",
+  retailer: "/retailer",
+  distributor: "/distributor",
+  staff: "/staff",
+  employee: "/employee",
+};
+
+const UNPREFIXED_PATHS = ["/api/", "/_next/", "/assets/", "/images/", "/favicon", "/icon", "/robots.txt", "/sitemap.xml", "/opengraph-image"];
+
+/** Returns the internal path for a subdomain request, or null when no rewrite is needed. */
+function subdomainPath(request: NextRequest): string | null {
+  const host = (request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "").split(":")[0].toLowerCase();
+  const sub = host.split(".")[0];
   const { pathname } = request.nextUrl;
+  if (sub === "auth") return pathname === "/" ? "/login" : null;
+  const prefix = SUBDOMAIN_PREFIX[sub];
+  if (!prefix || host.split(".").length < 3) return null;
+  if (pathname === prefix || pathname.startsWith(prefix + "/")) return null;
+  if (UNPREFIXED_PATHS.some((p) => pathname.startsWith(p))) return null;
+  return pathname === "/" ? prefix : prefix + pathname;
+}
+
+export async function proxy(request: NextRequest) {
+  const rewritten = subdomainPath(request);
+  const pathname = rewritten ?? request.nextUrl.pathname;
+  const pass = () => {
+    if (!rewritten) return NextResponse.next();
+    const url = request.nextUrl.clone();
+    url.pathname = rewritten;
+    return NextResponse.rewrite(url);
+  };
   const cookies = parseCookies(request);
 
   // --- CSRF (API) ----------------------------------------------------------
@@ -279,17 +316,17 @@ export async function proxy(request: NextRequest) {
   if (pathname.startsWith(CITIZEN_UPLOAD_PREFIX)) {
     const denied = await guardCitizenUpload(request, pathname, cookies);
     if (denied) return denied;
-    return NextResponse.next();
+    return pass();
   }
 
   // --- Portal pages ----------------------------------------------------------
   const portal = portalForPath(pathname);
 
   // No portal prefix → public route, pass through
-  if (!portal) return NextResponse.next();
+  if (!portal) return pass();
 
   // Login / public pages for this portal are always accessible
-  if (isPublicPath(pathname)) return NextResponse.next();
+  if (isPublicPath(pathname)) return pass();
 
   // Check authentication
   const authenticated = await isPortalAuthenticated(cookies, portal);
@@ -300,7 +337,7 @@ export async function proxy(request: NextRequest) {
       const complete = await hasSubmittedCitizenProfile(cookies["labourseva-user-session"]);
       if (!complete) return NextResponse.redirect(new URL("/user/profile", request.url));
     }
-    return NextResponse.next();
+    return pass();
   }
 
   // Redirect to the appropriate login page
@@ -314,14 +351,6 @@ export async function proxy(request: NextRequest) {
 // ---------------------------------------------------------------------------
 
 export const config = {
-  matcher: [
-    "/admin/:path*",
-    "/staff/:path*",
-    "/employee/:path*",
-    "/retailer/:path*",
-    "/distributor/:path*",
-    "/user/:path*",
-    "/api/:path*",
-    "/assets/uploads/services/:path*",
-  ],
+  // Everything except build assets, so portal subdomains can be rewritten.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
