@@ -13,7 +13,7 @@ import { DISTRIBUTOR_COOKIE_NAME } from "@/lib/distributor-session";
 import { createAdminSession, adminSessionCookieName } from "@/lib/admin-session";
 import { createStaffSession, staffSessionCookieName } from "@/lib/staff-session";
 import { signHmacSession } from "@/lib/session-validator";
-import { verifyCaptcha } from "@/modules/captcha";
+import { verifyCaptcha } from "@/modules/captcha/services/captcha-verification";
 
 export const dynamic = "force-dynamic";
 

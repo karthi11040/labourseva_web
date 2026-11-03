@@ -1,10 +1,10 @@
 "use client";
 
-import GuestRequestsPage from "@/app/admin/guest-requests/page";
+import GuestRequestsWorkbench from "@/components/admin/GuestRequestsWorkbench";
 
 export default function RetailRequestsPage() {
   return (
-    <GuestRequestsPage
+    <GuestRequestsWorkbench
       defaultRole="RETAILER"
       customEyebrow="Channel Operations"
       customTitle="Retail Partner Assisted Service Orders"

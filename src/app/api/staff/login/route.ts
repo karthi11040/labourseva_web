@@ -8,7 +8,7 @@ import {
   clientIpFromRequest,
 } from "@/lib/security/login-guard";
 import { createStaffSession, staffSessionCookieName } from "@/lib/staff-session";
-import { verifyCaptcha } from "@/modules/captcha";
+import { verifyCaptcha } from "@/modules/captcha/services/captcha-verification";
 
 export async function POST(request: Request) {
   try {

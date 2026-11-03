@@ -37,7 +37,7 @@ import {
   Settings2,
 } from "lucide-react";
 
-export const AVAILABLE_CATEGORY_ICONS = [
+const AVAILABLE_CATEGORY_ICONS = [
   { key: "Vote", label: "Voter / Election", Icon: Vote },
   { key: "CreditCard", label: "Identity / Cards", Icon: CreditCard },
   { key: "Building2", label: "Government / Municipal", Icon: Building2 },
@@ -56,7 +56,7 @@ export const AVAILABLE_CATEGORY_ICONS = [
   { key: "Layers", label: "Service / Utility", Icon: Layers },
 ];
 
-export const getLucideCategoryIcon = (keyOrUrl?: string) => {
+const getLucideCategoryIcon = (keyOrUrl?: string) => {
   if (!keyOrUrl) return FolderTree;
   const match = AVAILABLE_CATEGORY_ICONS.find(
     (item) => item.key.toLowerCase() === keyOrUrl.trim().toLowerCase()

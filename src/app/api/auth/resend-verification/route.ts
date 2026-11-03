@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { checkRateLimit, recordLoginFailure } from "@/lib/security";
 import { createSecurityToken } from "@/lib/token-store";
 import { dispatchEmailVerificationNotification } from "@/lib/notification-service";
-import { verifyCaptcha } from "@/modules/captcha";
+import { verifyCaptcha } from "@/modules/captcha/services/captcha-verification";
 
 export const dynamic = "force-dynamic";
 

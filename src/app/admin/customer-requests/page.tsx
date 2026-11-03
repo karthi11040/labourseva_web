@@ -1,10 +1,10 @@
 "use client";
 
-import GuestRequestsPage from "@/app/admin/guest-requests/page";
+import GuestRequestsWorkbench from "@/components/admin/GuestRequestsWorkbench";
 
 export default function CustomerRequestsPage() {
   return (
-    <GuestRequestsPage
+    <GuestRequestsWorkbench
       defaultRole="CUSTOMER"
       customEyebrow="Citizen Services Portal"
       customTitle="Citizen Service Applications & E-Service Claims"

@@ -1,7 +1,7 @@
 "use client";
 
-import GuestRequestsPage from "@/app/admin/guest-requests/page";
+import GuestRequestsWorkbench from "@/components/admin/GuestRequestsWorkbench";
 
 export default function AllRequestsPage() {
-  return <GuestRequestsPage />;
+  return <GuestRequestsWorkbench />;
 }

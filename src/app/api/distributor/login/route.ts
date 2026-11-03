@@ -9,7 +9,7 @@ import {
 import { verifyWithProgressiveRehash } from "@/lib/security/legacy-rehash";
 import { DISTRIBUTOR_COOKIE_NAME, DistributorSessionData } from "@/lib/distributor-session";
 import { signHmacSession } from "@/lib/session-validator";
-import { verifyCaptcha } from "@/modules/captcha";
+import { verifyCaptcha } from "@/modules/captcha/services/captcha-verification";
 
 export const dynamic = "force-dynamic";
 

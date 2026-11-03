@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { createAdminSession, adminSessionCookieName } from "@/lib/admin-session";
-import { verifyCaptcha } from "@/modules/captcha";
+import { verifyCaptcha } from "@/modules/captcha/services/captcha-verification";
 import {
   getClientIp,
   recordLoginAudit,

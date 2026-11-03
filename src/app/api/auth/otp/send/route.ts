@@ -6,7 +6,7 @@ import { sendOtpEmail } from "@/lib/email";
 import { checkRateLimit as memoryCheck, recordLoginFailure as memoryRecord } from "@/lib/security";
 import { checkRateLimit, RATE_LIMIT_PRESETS } from "@/lib/security/rate-limiter";
 import { clientIpFromRequest } from "@/lib/security/login-guard";
-import { verifyCaptcha } from "@/modules/captcha";
+import { verifyCaptcha } from "@/modules/captcha/services/captcha-verification";
 
 export const dynamic = "force-dynamic";
 
