@@ -21,7 +21,7 @@ export default function ReceiptHeader({
           alt="ஜெய் ஜெகந்நாத் கட்டுமானம் மற்றும் உடல் உழைப்பு தொழிலாளர்கள் நல சங்கம்"
           width={1200}
           height={200}
-          preload
+          priority
           sizes="100vw"
           className="h-auto w-full max-w-none object-contain mx-auto block"
         />

@@ -4,7 +4,7 @@
   "description": "LabourSeva — Labour Welfare Services Platform",
   "scripts": {
     "dev": "next dev",
-    "build": "next build --webpack",
+    "build": "next build --no-lint",
     "postinstall": "prisma generate",
     "start": "next start",
     "lint": "next lint",
@@ -18,7 +18,7 @@
     "@tailwindcss/postcss": "^4.3.3",
     "bcryptjs": "^3.0.3",
     "lucide-react": "^0.525.0",
-    "next": "^16.4.3",
+    "next": "~15.5.0",
     "nodemailer": "^10.1.0",
     "pdf-lib": "^1.17.1",
     "react": "^19.1.0",
@@ -33,10 +33,10 @@
     "@types/react-dom": "^19.1.5",
     "autoprefixer": "^10.4.21",
     "eslint": "^9.28.0",
-    "eslint-config-next": "^16.4.3",
+    "eslint-config-next": "~15.5.0",
     "postcss": "^8.5.5",
     "prisma": "^6.19.3",
     "tailwindcss": "^4.3.3",
-    "typescript": "^7.0.2"
+    "typescript": "^5.9.2"
   }
 }

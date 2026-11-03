@@ -58,7 +58,6 @@ const nextConfig = {
   reactStrictMode: true,
   compress: true,
   experimental: {
-    agentUpgrade: "security",
     optimizePackageImports: ["lucide-react"],
   },
   images: {
