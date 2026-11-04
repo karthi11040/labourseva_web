@@ -231,7 +231,7 @@ export async function verifyCaptcha(
   const isTestEnv = process.env.NODE_ENV === "test";
   const isDevEnv = process.env.NODE_ENV !== "production";
 
-  if (token === "test-valid-cap-token" || token.startsWith("test-valid-")) {
+  if (isDevEnv && (token === "test-valid-cap-token" || token.startsWith("test-valid-"))) {
     CONSUMED_TOKENS_CACHE.set(token, { consumedAt: Date.now(), ip, action });
     return {
       success: true,
