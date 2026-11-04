@@ -272,6 +272,13 @@ export async function verifyCaptcha(
     );
   }
 
+  // Cloudflare Turnstile: when configured it is the only accepted proof,
+  // because native ls_cap tokens can be minted by anyone via /api/captcha/verify.
+  const turnstileSecret = process.env.CLOUDFLARE_TURNSTILE_SECRET;
+  if (turnstileSecret) {
+    return verifyTurnstileToken(token, turnstileSecret, ip, action);
+  }
+
   // 5. Native Cryptographically Signed LabourSeva Tokens
   if (token.startsWith("ls_cap.")) {
     const verified = verifyLabourSevaCaptchaToken(token, options);
@@ -432,6 +439,63 @@ export async function verifyCaptcha(
       "Security verification is temporarily unavailable. Please try again later.",
       "பாதுகாப்பு சரிபார்ப்பு தற்காலிகமாக கிடைக்கவில்லை. பின்னர் முயற்சிக்கவும்."
     );
+  }
+}
+
+async function verifyTurnstileToken(
+  token: string,
+  secret: string,
+  ip: string,
+  action: string
+): Promise<CapVerificationResult> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
+  try {
+    const body = new URLSearchParams({ secret, response: token });
+    if (ip !== "unknown") body.set("remoteip", ip);
+    const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      body,
+      signal: controller.signal,
+      cache: "no-store",
+    });
+    const data = await response.json().catch(() => null);
+
+    if (data?.success === true) {
+      CONSUMED_TOKENS_CACHE.set(token, { consumedAt: Date.now(), ip, action });
+      return { success: true, timestamp: Date.now(), challengeTs: data.challenge_ts, action };
+    }
+
+    const codes: string[] = Array.isArray(data?.["error-codes"]) ? data["error-codes"] : [];
+    if (codes.includes("timeout-or-duplicate")) {
+      return makeVerificationError(
+        "EXPIRED_TOKEN",
+        "Your security verification has expired. Please try again.",
+        "உங்கள் பாதுகாப்பு சரிபார்ப்பு காலாவதியாகிவிட்டது. மீண்டும் முயற்சிக்கவும்."
+      );
+    }
+    if (!data || codes.some((c) => c.includes("secret"))) {
+      console.error(`[Turnstile] siteverify misconfigured or unreachable: ${codes.join(",") || response.status}`);
+      return makeVerificationError(
+        "SERVICE_UNAVAILABLE",
+        "Security verification is temporarily unavailable. Please try again later.",
+        "பாதுகாப்பு சரிபார்ப்பு தற்காலிகமாக கிடைக்கவில்லை. பின்னர் முயற்சிக்கவும்."
+      );
+    }
+    return makeVerificationError(
+      "INVALID_TOKEN",
+      "Security verification failed. Please complete the challenge again.",
+      "பாதுகாப்பு சரிபார்ப்பு தோல்வியடைந்தது. மீண்டும் முயற்சிக்கவும்."
+    );
+  } catch (err: any) {
+    console.error(`[Turnstile] siteverify request failed: ${err?.message || err}`);
+    return makeVerificationError(
+      "SERVICE_UNAVAILABLE",
+      "Security verification is temporarily unavailable. Please try again later.",
+      "பாதுகாப்பு சரிபார்ப்பு தற்காலிகமாக கிடைக்கவில்லை. பின்னர் முயற்சிக்கவும்."
+    );
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 

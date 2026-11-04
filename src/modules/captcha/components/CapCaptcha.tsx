@@ -24,7 +24,101 @@ export interface CapCaptchaHandle {
   getToken: () => string | null;
 }
 
-export const CapCaptcha = forwardRef<CapCaptchaHandle, CapWidgetProps>(function CapCaptcha(
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+const TURNSTILE_SCRIPT = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+
+type TurnstileApi = {
+  render: (el: HTMLElement, opts: Record<string, unknown>) => string;
+  reset: (id: string) => void;
+  remove: (id: string) => void;
+};
+
+function loadTurnstile(): Promise<TurnstileApi> {
+  const w = window as unknown as { turnstile?: TurnstileApi };
+  if (w.turnstile) return Promise.resolve(w.turnstile);
+  return new Promise((resolve, reject) => {
+    let script = document.querySelector<HTMLScriptElement>(`script[src="${TURNSTILE_SCRIPT}"]`);
+    if (!script) {
+      script = document.createElement("script");
+      script.src = TURNSTILE_SCRIPT;
+      script.async = true;
+      document.head.appendChild(script);
+    }
+    script.addEventListener("load", () => (w.turnstile ? resolve(w.turnstile) : reject(new Error("turnstile"))));
+    script.addEventListener("error", () => reject(new Error("turnstile")));
+  });
+}
+
+/** Cloudflare Turnstile widget, used when NEXT_PUBLIC_TURNSTILE_SITE_KEY is set. */
+const TurnstileCaptcha = forwardRef<CapCaptchaHandle, CapWidgetProps>(function TurnstileCaptcha(
+  { onVerified, onExpired, onError, onReset, className = "", compact = false, action = "authentication" },
+  ref
+) {
+  const { isTamil } = useLanguage();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const widgetIdRef = useRef<string | null>(null);
+  const apiRef = useRef<TurnstileApi | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const callbacks = useRef({ onVerified, onExpired, onError });
+  callbacks.current = { onVerified, onExpired, onError };
+
+  useEffect(() => {
+    let cancelled = false;
+    const failText = isTamil
+      ? "சரிபார்ப்பு தோல்வியடைந்தது. மீண்டும் முயற்சிக்கவும்."
+      : "Security verification failed. Please retry.";
+    loadTurnstile()
+      .then((api) => {
+        if (cancelled || !containerRef.current || !TURNSTILE_SITE_KEY) return;
+        apiRef.current = api;
+        widgetIdRef.current = api.render(containerRef.current, {
+          sitekey: TURNSTILE_SITE_KEY,
+          action: action.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 32),
+          size: compact ? "compact" : "flexible",
+          language: isTamil ? "ta" : "en",
+          callback: (t: string) => {
+            setToken(t);
+            callbacks.current.onVerified(t);
+          },
+          "expired-callback": () => {
+            setToken(null);
+            callbacks.current.onExpired?.();
+          },
+          "error-callback": () => {
+            setToken(null);
+            callbacks.current.onError?.(failText);
+          },
+        });
+      })
+      .catch(() => callbacks.current.onError?.(failText));
+    return () => {
+      cancelled = true;
+      if (widgetIdRef.current && apiRef.current) apiRef.current.remove(widgetIdRef.current);
+      widgetIdRef.current = null;
+    };
+  }, [action, compact, isTamil]);
+
+  const reset = useCallback(() => {
+    setToken(null);
+    if (widgetIdRef.current && apiRef.current) apiRef.current.reset(widgetIdRef.current);
+    onReset?.();
+  }, [onReset]);
+
+  useImperativeHandle(ref, () => ({ reset, solve: async () => {}, getToken: () => token }), [reset, token]);
+
+  return (
+    <div className={`w-full ${className}`}>
+      <div ref={containerRef} />
+      <input type="hidden" name="cap-token" value={token || ""} />
+    </div>
+  );
+});
+
+export const CapCaptcha = forwardRef<CapCaptchaHandle, CapWidgetProps>(function CapCaptcha(props, ref) {
+  return TURNSTILE_SITE_KEY ? <TurnstileCaptcha {...props} ref={ref} /> : <NativeCaptcha {...props} ref={ref} />;
+});
+
+const NativeCaptcha = forwardRef<CapCaptchaHandle, CapWidgetProps>(function NativeCaptcha(
   {
     onVerified,
     onExpired,
@@ -102,9 +196,11 @@ export const CapCaptcha = forwardRef<CapCaptchaHandle, CapWidgetProps>(function 
         handleFail(errorText);
       }
     } catch {
-      // Offline / fallback verification token so users are never blocked
-      const fallbackToken = "test-valid-cap-token";
-      handleSolve(fallbackToken);
+      handleFail(
+        isTamil
+          ? "சரிபார்ப்பு தோல்வியடைந்தது. மீண்டும் முயற்சிக்கவும்."
+          : "Security verification failed. Check your connection and retry."
+      );
     }
   }, [action, disabled, handleFail, handleSolve, isTamil, status]);
 
